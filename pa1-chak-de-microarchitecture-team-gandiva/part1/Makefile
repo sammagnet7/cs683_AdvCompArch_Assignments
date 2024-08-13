@@ -3,7 +3,7 @@ CC=g++
 FLAGS=-mavx512f
 
 naive: build
-	$(CC) $(FLAGS) transpose.c -o $(BUILD)/$@
+	$(CC) $(FLAGS) transpose.c -D NAIVE -o $(BUILD)/$@
 
 tiling: build
 	$(CC) $(FLAGS) transpose.c -D OPTIMIZE_TILING -o $(BUILD)/$@

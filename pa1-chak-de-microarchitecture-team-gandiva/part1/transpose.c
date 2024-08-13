@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
 
 
 #ifdef NAIVE
-    naive(matrix, transpose, size);
+    naive(matrix, naive_transpose, size);
 
 #endif
 
