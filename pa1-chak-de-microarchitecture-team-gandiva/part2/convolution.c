@@ -4,17 +4,38 @@
 #include <math.h>
 #include <immintrin.h> // For SIMD intrinsics
 
+const int LINE_SIZE = 64;             // 64 Byte L1-D cache line
+const int LLC_size = 3 * 1024 * 1024; // 3 MB LLC cache
 
 void naive_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void tiled_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 
-
 void tiled_simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void simd_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void simd_tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
+
+void flushCache()
+{
+    // Create a buffer large enough to fill the LLC
+    size_t buffer_size = LLC_size;
+    char *buffer = (char *)malloc(buffer_size);
+    if (!buffer)
+    {
+        perror("malloc failed");
+        return;
+    }
+
+    // Access each cache line to flush the LLC
+    for (size_t i = 0; i < buffer_size; i += LINE_SIZE)
+    {
+        _mm_clflush(&buffer[i]);
+    }
+
+    free(buffer);
+}
 
 /**
  * @brief 		Generates random numbers between values fMin and fMax.
@@ -83,7 +104,6 @@ void initialize_result_matrix(double *matrix, int rows, int cols)
     }
 }
 
-
 /**
  * @brief 		Compare if two matrices of same dimension are identical
  * @param 		C 		first matrix to compare
@@ -144,7 +164,6 @@ int main(int argc, char **argv)
     // Print the execution times and speedups
     printf("Naive Convolution Time: %f seconds\n", naive_time);
 
-
 // Measure execution time and perform tiled convolution
 #ifdef OPTIMIZE_TILING
 
@@ -184,7 +203,6 @@ int main(int argc, char **argv)
 
 #endif
 
-
 #ifdef OPTIMIZE_TILING_SIMD
     initialize_result_matrix(optimized_op, output_dim, output_dim);
 
@@ -201,13 +219,11 @@ int main(int argc, char **argv)
 #ifdef OPTIMIZE_SIMD_PREFETCH
     initialize_result_matrix(optimized_op, output_dim, output_dim);
 
-
     double simd_prefetch_time = measure_execution_time(simd_prefetch_convolution, input_image, optimized_op, kernel, dim, output_dim, kernel_size);
     double simd_prefetch_speedup = naive_time / simd_prefetch_time;
     printf("SIMD Prefetch Convolution Time: %f seconds, Speedup: %fx\n", simd_prefetch_time, simd_prefetch_speedup);
 
     verify_correctness(output_image, optimized_op, output_dim);
-
 
 #endif
 
@@ -221,7 +237,6 @@ int main(int argc, char **argv)
 
     verify_correctness(output_image, optimized_op, output_dim);
 
-
 #endif
 
 // Measure execution time and perform SIMD tiled prefetch convolution
@@ -233,7 +248,6 @@ int main(int argc, char **argv)
     printf("SIMD Tiled Prefetch Convolution Time: %f seconds, Speedup: %fx\n", simd_tiled_prefetch_time, simd_tiled_prefetch_speedup);
 
     verify_correctness(output_image, optimized_op, output_dim);
-
 
 #endif
 
@@ -270,15 +284,85 @@ void naive_convolution(double *input_image, double *output_image, double *kernel
 // Tiled convolution implementation
 void tiled_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-   // Students need to implement this
+    // Students need to implement this
+    int tile_size = 16; // 16 by 16 block
+    input_image = (double *)__builtin_assume_aligned(input_image, LINE_SIZE);
+    output_image = (double *)__builtin_assume_aligned(output_image, LINE_SIZE);
 
+    for (int i = 0; i < output_dim; i += tile_size)
+    {
+        for (int j = 0; j < output_dim; j += tile_size)
+        {
+            // Iterate over the tile
+            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            {
+                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                {
+                    double sum = 0.0;
+
+                    // Perform convolution on the tile
+                    for (int ki = 0; ki < kernel_size; ki++)
+                    {
+                        for (int kj = 0; kj < kernel_size; kj++)
+                        {
+                            int x = ii + ki;
+                            int y = jj + kj;
+                            sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
+                        }
+                    }
+
+                    output_image[ii * output_dim + jj] = sum;
+                }
+            }
+        }
+    }
 }
 
 // SIMD convolution implementation
 void simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    // Students need to implement this
+    double temp[4];
+    int remainder = kernel_size % 4;
+    int simd_width = kernel_size - remainder;
 
+    for (int i = 0; i < output_dim; i++)
+    {
+        for (int j = 0; j < output_dim; j++)
+        {
+            __m256d sum = _mm256_setzero_pd();
+            double scalar_sum = 0;
+
+            for (int ki = 0; ki < kernel_size; ki++)
+            {
+                int x = i + ki;
+
+                for (int kj = 0; kj < simd_width; kj += 4)
+                { // Process 4 elements at a time
+                    int y = j + kj;
+
+                    // Load 4 pixels from the input image
+                    __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
+
+                    // Load 4 kernel values
+                    __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+
+                    // Multiply and accumulate
+                    __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
+
+                    // Horizontal sum to get the scalar result
+                    // sum += _mm256_reduce_add_pd(result_vec);
+                    sum = _mm256_add_pd(result_vec, sum);
+                }
+                for (int kj = simd_width; kj < kernel_size; kj++)
+                {
+                    int y = j + kj;
+                    scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
+                }
+            }
+            _mm256_storeu_pd(temp, sum);
+            output_image[i * output_dim + j] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
+        }
+    }
 }
 
 // Prefetch convolution implementation
@@ -292,7 +376,62 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
 void tiled_simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
     // Students need to implement this
+    int tile_size = 16; // Tile size (can be adjusted based on cache size)
+    int remainder = kernel_size % 4;
+    int simd_width = kernel_size - remainder;
+    double temp[4];
 
+    // Align the input and output images to cache line size
+    input_image = (double *)__builtin_assume_aligned(input_image, 64);
+    output_image = (double *)__builtin_assume_aligned(output_image, 64);
+
+    // Iterate over the output image in tiles
+    for (int i = 0; i < output_dim; i += tile_size)
+    {
+        for (int j = 0; j < output_dim; j += tile_size)
+        {
+            // Process each tile
+            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            {
+                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                {
+                    __m256d sum = _mm256_setzero_pd();
+                    double scalar_sum = 0;
+
+                    // Perform SIMD convolution within the tile
+                    for (int ki = 0; ki < kernel_size; ki++)
+                    {
+                        int x = ii + ki;
+
+                        for (int kj = 0; kj < simd_width; kj += 4)
+                        { // Process 4 elements at a time
+                            int y = jj + kj;
+
+                            // Load 4 pixels from the input image
+                            __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
+
+                            // Load 4 kernel values
+                            __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+
+                            // Multiply and accumulate
+                            __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
+                            sum = _mm256_add_pd(result_vec, sum);
+                        }
+
+                        // Handle the remainder part that cannot be processed by SIMD
+                        for (int kj = simd_width; kj < kernel_size; kj++)
+                        {
+                            int y = jj + kj;
+                            scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
+                        }
+                    }
+
+                    _mm256_storeu_pd(temp, sum);
+                    output_image[ii * output_dim + jj] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
+                }
+            }
+        }
+    }
 }
 
 // SIMD prefetch convolution implementation
@@ -316,6 +455,7 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
 // Function to measure execution time of a convolution function
 double measure_execution_time(void (*func)(double *, double *, double *, int, int, int), double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
+    flushCache();
     clock_t start, end;
     start = clock();
     func(input_image, output_image, kernel, dim, output_dim, kernel_size);

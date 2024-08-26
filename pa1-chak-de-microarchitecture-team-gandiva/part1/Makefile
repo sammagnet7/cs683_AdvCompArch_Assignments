@@ -1,6 +1,6 @@
 BUILD=build
 CC=g++
-FLAGS=-mavx512f
+FLAGS=-mavx
 
 naive: build
 	$(CC) $(FLAGS) transpose.c -D NAIVE -o $(BUILD)/$@
