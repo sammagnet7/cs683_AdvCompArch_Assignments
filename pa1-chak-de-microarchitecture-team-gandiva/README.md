@@ -1,4 +1,42 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/4u66Tjkg)
 # CS683 2024 Assignment 1
-Check out the following Google doc to know more about the assignment:
-https://docs.google.com/document/d/1bXlM9dCJUdwJE90ZmEH7Ty1bVHLkv3LpLvUgGntBU6U/edit?usp=sharing
+> **Note:** {workspace}= "pa1-chak-de-microarchitecture-team-gandiva/"
+
+### Team members
+    * Soumik Dutta (23m0826)
+    * Sm Arif Ali (23m0822)
+
+### Sytem deatils on which we are performing all the tests:
+
+* Processor: Intel(R) Core(TM) i7-14650HX
+* Hyper threading is turned off ( Script: {workspace}/hyperthread_toggle.sh )
+*  CPU frequency: 5.2 GHz
+* Cache:
+    * L1 D cache: 48 KB
+        * Line size: 64 B
+        * Associativity: 12
+        * Number of sets: 64
+    * L1 I cache: 32 KB
+        * Line size: 64 B
+        * Associativity: 8
+        * Number of sets: 64
+    * L2 cache: 2 MB
+        * Line size: 64 B
+        * Associativity: 16
+        * Number of sets: 2048
+    * L3 cache: 30 MB
+        * Line size: 64 B
+        * Associativity: 12
+        * Number of sets: 40960
+
+
+### Testing values:
+ * Element size: 8 Bytes [ size of Double ] 
+ * Max Block size (B) = 156 Bytes [ As $3B^2<C$ where $C= 48 KB$ ] 
+ * Tile sizes: [4,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128,136,144,152]
+ * Matrix sizes: [5000,10000,15000,20000,250000,30000]
+ * Averaged over 5 rounds each
+
+# Part 1:
+
+
+ 
