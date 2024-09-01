@@ -77,8 +77,8 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
 def main():
 
-    matrix_size = [5000,10000,15000]
-    block_size = [0,4,8,16,32]
+    matrix_size = [1000, 3000, 5000, 7000, 9000, 11000]
+    block_size = [0,4,8,16,32,48,56,64]
 
     mpki_over_matrix = []
 

@@ -31,8 +31,8 @@
 
 ### Testing values:
  * Element size: 8 Bytes [ size of Double ] 
- * Max Block size (B) = 156 Bytes [ As $3B^2<C$ where $C= 48 KB$ ] 
- * Tile sizes: [4,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128,136,144,152]
+ * Max Tile size = 55x55 (i.e. $\sqrt((48*1024/2)/8)$) [ As $2B^2<C$ where $C= 48 KByte$ ] 
+ * Tile sizes: [4,8,16,24,32,40,48,56,64]
  * Matrix sizes: [5000,10000,15000,20000,250000,30000]
  * Averaged over 5 rounds each
 
