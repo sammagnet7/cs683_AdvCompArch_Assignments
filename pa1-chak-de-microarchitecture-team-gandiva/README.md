@@ -2,13 +2,13 @@
 > **Note:** {workspace}= "pa1-chak-de-microarchitecture-team-gandiva/"
 
 ### Team members
-    * Soumik Dutta (23m0826)
-    * Sm Arif Ali (23m0822)
+* Soumik Dutta (23m0826)
+* Sm Arif Ali (23m0822)
 
-### Sytem deatils on which we are performing all the tests:
+### System details on which we are performing all the tests:
 
 * Processor: Intel(R) Core(TM) i7-14650HX
-* Hyper threading is turned off ( Script: {workspace}/hyperthread_toggle.sh )
+* Hyper threading is turned off ( Script: {workspace}/hyper_thread_toggle.sh )
 *  CPU frequency: 5.2 GHz
 * Cache:
     * L1 D cache: 48 KB

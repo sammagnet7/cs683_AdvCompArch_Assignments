@@ -3,7 +3,8 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-
+FONT_SIZE = 18
+AVG_ITERATIONS = 5
 # Function to extract MPKI from the output
 def extract_mpki(output):
     match = re.search(r"MPKI: ([\d.]+)", output)
@@ -12,7 +13,7 @@ def extract_mpki(output):
     return None
 
 # Function to run the perf stat command and calculate average MPKI
-def run_perf_stat(executable, matrix_size, block_size, iterations=10):
+def run_perf_stat(executable, matrix_size, block_size, iterations=AVG_ITERATIONS):
     mpki_sum = 0.0
     for _ in range(iterations):
         bash_command = f"""
@@ -46,11 +47,13 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
-    plt.xticks(np.arange(len(matrix_size)) + (n_bars - 1) * bar_width / 2, matrix_size)
+    plt.xticks(np.arange(len(matrix_size)) + (n_bars - 1) * bar_width / 2, matrix_size, fontsize=FONT_SIZE)
 
-    plt.ylabel('MPKI')
+    plt.yticks(fontsize=FONT_SIZE)
 
-    plt.xlabel('Matrix Size')
+    plt.ylabel('MPKI', fontsize=FONT_SIZE)
+
+    plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
     plt.title('MPKI vs Matrix Size for Different Block Sizes')
 
@@ -58,13 +61,13 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.2)
 
     # Adding legends outside the plot
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4, fontsize=FONT_SIZE)
 
     # Adding values on top of bars
     for i in range(n_bars):
         for j in range(len(matrix_size)):
             plt.text(bar_positions[i][j], mpki_over_matrix[j][i] + max(max(mpki_over_matrix)) * 0.05, 
-                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical')
+                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=18)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.2) 
@@ -74,11 +77,8 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
 def main():
 
-    #matrix_size = [5000,10000,15000,20000,250000,30000]
-    #block_size = [0,4,8,16,32,48,64,96,128,152]
-
-    matrix_size = [200, 250, 300, 350, 400, 450, 500, 550, 600, 1000]
-    block_size = [0,4,8,16,32,64,128,]
+    matrix_size = [5000,10000,15000]
+    block_size = [0,4,8,16,32]
 
     mpki_over_matrix = []
 
