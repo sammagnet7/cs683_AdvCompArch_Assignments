@@ -43,7 +43,7 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if block_size[i] == 0 else f'Block Size {block_size[i]}'
+        label = 'naive approach' if block_size[i] == 0 else f'software prefetch'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -55,7 +55,7 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title('MPKI vs Matrix Size for Different Tile Sizes')
+    plt.title('MPKI vs Matrix Size for Software prefetch')
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.2)
@@ -77,8 +77,8 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
 def main():
 
-    matrix_size = [5000,10000,15000]
-    block_size = [0,4,8,16,32]
+    matrix_size = [5000,7000,9000]
+    block_size = [0,-1] # 0 is for naive approach and -1 is for soft pre fetch
 
     mpki_over_matrix = []
 
@@ -88,7 +88,7 @@ def main():
                 if(b==0):
                     mpki_over_block.append( round(run_perf_stat('naive', m, b),2)  )
                 else:
-                    mpki_over_block.append( round(run_perf_stat('tiling', m, b),2) )
+                    mpki_over_block.append( round(run_perf_stat('prefetch', m, b),2) )
 
         print(f"mpki calculated for matrix size:{m}")
         mpki_over_matrix.append(mpki_over_block)
