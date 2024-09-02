@@ -10,6 +10,9 @@ BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
 EXEC_OPTIMIZED='tiling'
 
+MATRIX_SIZE = [1000, 3000, 5000]
+TILE_SIZE = [0,4,8,16,32]
+
 # Function to extract Instructions from the output
 def extract_instr(output):
     match = re.search(r"Instructions: ([\d.]+)", output)
@@ -86,14 +89,11 @@ def plot_results(matrix_size, instr_over_matrix, tile_size):
 
 def main():
 
-    matrix_size = [1000, 3000, 5000]
-    tile_size = [0,4,8,16,32]
-
     instr_over_matrix = []
 
-    for m in matrix_size:    
+    for m in MATRIX_SIZE:    
         instr_over_block=[]   
-        for b in tile_size:
+        for b in TILE_SIZE:
                 if(b==0):
                     instr_over_block.append( round(run_perf_stat(EXEC_NAIVE, m, b),2)  )
                 else:
@@ -103,7 +103,7 @@ def main():
         instr_over_matrix.append(instr_over_block)
 
     # Plot the results
-    plot_results(matrix_size, instr_over_matrix, tile_size)
+    plot_results(MATRIX_SIZE, instr_over_matrix, TILE_SIZE)
 
 if __name__ == "__main__":
     main()
