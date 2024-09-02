@@ -8,12 +8,12 @@ import math
 FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
-BUILD_DIR='../part1/build'
+BUILD_DIR='../part2/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED='tiling'
+EXEC_OPTIMIZED='tiling' # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
 
-MATRIX_SIZE = [1000, 3000, 5000, 7000, 9000, 11000]
-TILE_SIZE = [0,4,8,16,32,48,56,64]
+MATRIX_SIZE = [100, 150, 200]
+TILE_SIZE = [0,4,8,16,32] # Add 0 for naive approach
 ################### customize #######################
 
 # Function to extract MPKI from the output
@@ -24,11 +24,11 @@ def extract_mpki(output):
     return None
 
 # Function to run the perf stat command and calculate average MPKI
-def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS):
+def run_perf_stat(executable, matrix_size, tile_size, KERNEL_SIZE, iterations=AVG_ITERATIONS):
     mpki_sum = 0.0
     for _ in range(iterations):
         bash_command = f"""
-        perf stat -x, -e instructions,L1-dcache-load-misses {BUILD_DIR}/{executable} {matrix_size} {tile_size} 2>&1 | 
+        perf stat -x, -e instructions,L1-dcache-load-misses {BUILD_DIR}/{executable} {matrix_size} {KERNEL_SIZE} {tile_size} 2>&1 | 
         gawk --bignum '/instructions/ {{instructions=$1}}
         /L1-dcache-load-misses/ {{misses=$1}}
         END {{
@@ -38,15 +38,17 @@ def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS)
         """
         result = subprocess.run(bash_command, shell=True, capture_output=True, text=True)
         mpki = extract_mpki(result.stdout)
+
         if mpki is not None:
             mpki_sum += mpki
+
     return mpki_sum / iterations
 
 # Function to plot the results
-def plot_results(matrix_size, mpki_over_matrix, tile_size):
+def plot_results(matrix_size, mpki_over_matrix, tile_size, KERNEL_SIZE):
 
     n_bars = len(tile_size)
-    bar_width = 0.12
+    bar_width = 0.11
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
@@ -54,7 +56,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'Block Size {tile_size[i]}'
+        label = 'naive approach' if tile_size[i] == 0 else f'Tile Size {tile_size[i]}'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -66,7 +68,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED})', fontsize=FONT_SIZE)
+    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.2)
@@ -88,21 +90,32 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
 def main():
 
+    KERNEL_SIZE = int(input("Input Kernel size in multiple of 8: "))
+
     mpki_over_matrix = []
 
     for m in MATRIX_SIZE:    
         mpki_over_block=[]   
+        del_tiles = []
+
         for b in TILE_SIZE:
                 if(b==0):
-                    mpki_over_block.append( round(run_perf_stat(EXEC_NAIVE, m, b),2)  )
+                    mpki_over_block.append( round(run_perf_stat(EXEC_NAIVE, m, b, KERNEL_SIZE),2)  )
+                elif b<KERNEL_SIZE:
+                    del_tiles.append(b)
+                    continue
                 else:
-                    mpki_over_block.append( round(run_perf_stat(EXEC_OPTIMIZED, m, b),2) )
+                    mpki_over_block.append( round(run_perf_stat(EXEC_OPTIMIZED, m, b, KERNEL_SIZE),2) )
 
         print(f"mpki calculated for matrix size:{m}")
         mpki_over_matrix.append(mpki_over_block)
 
+    # Removes the invalid tile sizes
+    for b in del_tiles:
+           TILE_SIZE.remove(b)
+           
     # Plot the results
-    plot_results(MATRIX_SIZE, mpki_over_matrix, TILE_SIZE)
+    plot_results(MATRIX_SIZE, mpki_over_matrix, TILE_SIZE, KERNEL_SIZE)
 
 if __name__ == "__main__":
     main()

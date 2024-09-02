@@ -8,34 +8,37 @@ import math
 FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
-BUILD_DIR='../part1/build'
-EXEC_OPTIMIZED='tiling'
+BUILD_DIR='../part2/build'
+EXEC_OPTIMIZED='tiling' # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [5000,10000,15000,20000,250000,30000]
-TILE_SIZE = [4,8,16,32,48,56,64,128]
+MATRIX_SIZE = [100, 300, 700, 1100]
+TILE_SIZE = [4,8,16,32,64]
 
 ################### customize #######################
 
 # Function to extract speedup from the output
 def extract_speedup(output):
-    match = re.search(r"The speedup obtained by .* is ([\d.]+)", output)
+    match = re.search(r"Speedup: ([\d.]+)", output)
     if match:
         return float(match.group(1))
     return None
 
 # Function to run the executable and calculate average speedup
-def run_optimized_executable(matrix_size, block_size, iterations=AVG_ITERATIONS):
+def run_optimized_executable(matrix_size, tile_size, KERNEL_SIZE, iterations=AVG_ITERATIONS):
     speedup_sum = 0.0
     for _ in range(iterations):
-        result = subprocess.run([EXECUTABLE, str(matrix_size), str(block_size)], capture_output=True, text=True)
+        result = subprocess.run([EXECUTABLE, str(matrix_size), str(KERNEL_SIZE) ,str(tile_size)], capture_output=True, text=True)
         speedup = extract_speedup(result.stdout)
+
         if speedup is not None:
             speedup_sum += speedup
-    return speedup_sum / iterations
+    
+    avg_speedup = speedup_sum / iterations
+    return avg_speedup
 
 # Function to plot the results
-def plot_results(matrix_size, speedups_over_matrix, tile_size):
+def plot_results(matrix_size, speedups_over_matrix, tile_size, KERNEL_SIZE):
 
     n_bars = len(tile_size)
     bar_width = 0.11
@@ -46,7 +49,7 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = f'Block Size {tile_size[i]}'
+        label = f'Tile Size {tile_size[i]}'
         plt.bar(bar_positions[i], [speedup[i] for speedup in speedups_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -58,10 +61,10 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED})', fontsize=FONT_SIZE)
+    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
-    plt.ylim(0, max(max(speedups_over_matrix)) * 1.2)
+    plt.ylim(0, max(max(speedups_over_matrix)) * 1.3)
 
     # Adding legends outside the plot
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4, fontsize=FONT_SIZE)
@@ -80,20 +83,31 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
 def main():
 
+    KERNEL_SIZE = int(input("Input Kernel size in multiple of 8: "))
+
     speedups_over_matrix = []
 
     for m in MATRIX_SIZE:
         speedup_over_block=[]
+        del_tiles = []
+
         for b in TILE_SIZE:
             if b==0:
                 continue
-            speedup_over_block.append( round(run_optimized_executable(m, b),2) )
+            elif b<KERNEL_SIZE:
+                del_tiles.append(b)
+            else:    
+                speedup_over_block.append( round(run_optimized_executable(m, b, KERNEL_SIZE),2) )
 
         print(f"speedup calculated for matrix size:{m}")
         speedups_over_matrix.append(speedup_over_block)
     
+    # Removes the invalid tile sizes
+    for b in del_tiles:
+           TILE_SIZE.remove(b)
+
     # Plot the results
-    plot_results(MATRIX_SIZE, speedups_over_matrix, TILE_SIZE)
+    plot_results(MATRIX_SIZE, speedups_over_matrix, TILE_SIZE, KERNEL_SIZE)
 
 if __name__ == "__main__":
     main()

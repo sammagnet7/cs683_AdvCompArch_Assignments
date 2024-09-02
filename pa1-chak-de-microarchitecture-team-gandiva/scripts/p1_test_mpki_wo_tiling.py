@@ -10,7 +10,7 @@ AVG_ITERATIONS = 5
 
 BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED='prefetch'
+EXEC_OPTIMIZED='prefetch'# prefetch
 
 MATRIX_SIZE = [5000,7000,9000]
 TILE_SIZE = [0,-1] # 0 is for naive approach and -1 is for soft pre fetch
@@ -47,7 +47,7 @@ def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS)
 def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     n_bars = len(tile_size)
-    bar_width = 0.12
+    bar_width = 0.11
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
@@ -55,7 +55,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'software prefetch'
+        label = 'naive approach' if tile_size[i] == 0 else f'{EXEC_OPTIMIZED}'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels

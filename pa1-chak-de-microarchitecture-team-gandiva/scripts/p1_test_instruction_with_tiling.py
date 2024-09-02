@@ -10,10 +10,10 @@ AVG_ITERATIONS = 5
 
 BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED='tiling'
+EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 
 MATRIX_SIZE = [1000, 3000, 5000]
-TILE_SIZE = [0,4,8,16,32]
+TILE_SIZE = [0,4,8,16,32] 
 ################### customize #######################
 
 # Function to extract Instructions from the output
@@ -50,7 +50,7 @@ def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS)
 def plot_results(matrix_size, instr_over_matrix, tile_size):
 
     n_bars = len(tile_size)
-    bar_width = 0.12
+    bar_width = 0.11
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
@@ -58,7 +58,7 @@ def plot_results(matrix_size, instr_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'Block Size {tile_size[i]}'
+        label = 'naive approach' if tile_size[i] == 0 else f'Tile Size {tile_size[i]}'
         plt.bar(bar_positions[i], [instr[i] for instr in instr_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels

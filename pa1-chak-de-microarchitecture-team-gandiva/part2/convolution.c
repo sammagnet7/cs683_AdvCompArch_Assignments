@@ -6,7 +6,7 @@
 const int LINE_SIZE = 64;                  // 64 Byte L1-D cache line
 const int LLC_size = 3 * 1024 * 1024 * 10; // 3 MB LLC cache
 
-int output_tile_size = 64; // Input by user otherwise Default 64
+int source_tile_size = 64; // Source tile size is input by user, Default 64
 
 void naive_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void tiled_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 
     int dim = atoi(argv[1]);
     int kernel_size = atoi(argv[2]);
-    output_tile_size = atoi(argv[3]);
+    source_tile_size = atoi(argv[3]);
     int output_dim = dim - kernel_size + 1;
 
     if(kernel_size % 8 != 0) {
@@ -275,18 +275,18 @@ void tiled_convolution(double *input_image, double *output_image, double *kernel
 {
     // Students need to implement this
 
-    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
+    int output_tile_size  = source_tile_size - kernel_size + 1; // adjusting destination tile size accroding to the source_tile_size
     input_image = (double *)__builtin_assume_aligned(input_image, LINE_SIZE);
     output_image = (double *)__builtin_assume_aligned(output_image, LINE_SIZE);
 
-    for (int i = 0; i < output_dim; i += tile_size)
+    for (int i = 0; i < output_dim; i += output_tile_size)
     {
-        for (int j = 0; j < output_dim; j += tile_size)
+        for (int j = 0; j < output_dim; j += output_tile_size)
         {
             // Iterate over the tile
-            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            for (int ii = i; ii < i + output_tile_size && ii < output_dim; ii++)
             {
-                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     double sum = 0.0;
 
@@ -392,7 +392,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
 // Tiled SIMD convolution implementation
 void tiled_simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
+    int output_tile_size  = source_tile_size - kernel_size + 1; // adjusting destination tile size accroding to the source_tile_size
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
@@ -402,14 +402,14 @@ void tiled_simd_convolution(double *input_image, double *output_image, double *k
     output_image = (double *)__builtin_assume_aligned(output_image, 64);
 
     // Iterate over the output image in tiles
-    for (int i = 0; i < output_dim; i += tile_size)
+    for (int i = 0; i < output_dim; i += output_tile_size)
     {
-        for (int j = 0; j < output_dim; j += tile_size)
+        for (int j = 0; j < output_dim; j += output_tile_size)
         {
             // Process each tile
-            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            for (int ii = i; ii < i + output_tile_size && ii < output_dim; ii++)
             {
-                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     __m256d sum = _mm256_setzero_pd();
                     double scalar_sum = 0;
@@ -503,18 +503,18 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
 void tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
     // Students need to implement this
-    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
+    int output_tile_size  = source_tile_size - kernel_size + 1; // adjusting destination tile size accroding to the source_tile_size
     input_image = (double *)__builtin_assume_aligned(input_image, LINE_SIZE);
     output_image = (double *)__builtin_assume_aligned(output_image, LINE_SIZE);
 
-    for (int i = 0; i < output_dim; i += tile_size)
+    for (int i = 0; i < output_dim; i += output_tile_size)
     {
-        for (int j = 0; j < output_dim; j += tile_size)
+        for (int j = 0; j < output_dim; j += output_tile_size)
         {
             // Iterate over the tile
-            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            for (int ii = i; ii < i + output_tile_size && ii < output_dim; ii++)
             {
-                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     double sum = 0.0;
                     _mm_prefetch((const char *)&input_image[(ii + 4) * dim + jj], _MM_HINT_T1);
@@ -543,7 +543,7 @@ void tiled_prefetch_convolution(double *input_image, double *output_image, doubl
 
 void simd_tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
+    int output_tile_size  = source_tile_size - kernel_size + 1; // adjusting destination tile size accroding to the source_tile_size
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
@@ -553,14 +553,14 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
     output_image = (double *)__builtin_assume_aligned(output_image, 64);
 
     // Iterate over the output image in tiles
-    for (int i = 0; i < output_dim; i += tile_size)
+    for (int i = 0; i < output_dim; i += output_tile_size)
     {
-        for (int j = 0; j < output_dim; j += tile_size)
+        for (int j = 0; j < output_dim; j += output_tile_size)
         {
             // Process each tile
-            for (int ii = i; ii < i + tile_size && ii < output_dim; ii++)
+            for (int ii = i; ii < i + output_tile_size && ii < output_dim; ii++)
             {
-                for (int jj = j; jj < j + tile_size && jj < output_dim; jj++)
+                for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     __m256d sum = _mm256_setzero_pd();
                     double scalar_sum = 0;

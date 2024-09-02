@@ -9,7 +9,7 @@ FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
 BUILD_DIR='../part1/build'
-EXEC_OPTIMIZED='tiling'
+EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
 MATRIX_SIZE = [5000,10000,15000,20000,250000,30000]
@@ -46,7 +46,7 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = f'Block Size {tile_size[i]}'
+        label = f'Tile Size {tile_size[i]}'
         plt.bar(bar_positions[i], [speedup[i] for speedup in speedups_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels

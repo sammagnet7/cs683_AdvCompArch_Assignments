@@ -9,7 +9,7 @@ FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
 BUILD_DIR='../part1/build'
-EXEC_OPTIMIZED='prefetch'
+EXEC_OPTIMIZED='prefetch' # prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
 MATRIX_SIZE = [100, 300, 500, 700, 900, 1100]
@@ -39,7 +39,7 @@ def plot_results(matrix_size, speedups_over_matrix):
 
     plt.figure(figsize=(14, 6))
 
-    bars = plt.bar(matrix_size, speedups_over_matrix, color='skyblue', edgecolor='black', width=bar_width, label='software prefetch')
+    bars = plt.bar(matrix_size, speedups_over_matrix, color='skyblue', edgecolor='black', width=bar_width, label=f'{EXEC_OPTIMIZED}')
 
     # Adding the x-axis labels
     plt.xticks(matrix_size, fontsize=FONT_SIZE)
