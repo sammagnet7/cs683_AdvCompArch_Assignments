@@ -3,6 +3,8 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+
+################### customize #######################
 FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
@@ -12,6 +14,8 @@ EXEC_OPTIMIZED='prefetch'
 
 MATRIX_SIZE = [5000,7000,9000]
 TILE_SIZE = [0,-1] # 0 is for naive approach and -1 is for soft pre fetch
+
+################### customize #######################
 
 # Function to extract MPKI from the output
 def extract_mpki(output):
@@ -63,10 +67,10 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title('MPKI vs Matrix Size for Software prefetch')
+    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED})')
 
     # Adjusting y-axis limit to make space for the labels
-    plt.ylim(0, max(max(mpki_over_matrix)) * 1.2)
+    plt.ylim(0, max(max(mpki_over_matrix)) * 1.5)
 
     # Adding legends outside the plot
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4, fontsize=FONT_SIZE)
@@ -74,8 +78,8 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
     # Adding values on top of bars
     for i in range(n_bars):
         for j in range(len(matrix_size)):
-            plt.text(bar_positions[i][j], mpki_over_matrix[j][i] + max(max(mpki_over_matrix)) * 0.05, 
-                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=18)
+            plt.text(bar_positions[i][j], mpki_over_matrix[j][i] + max(max(mpki_over_matrix)) * 0.03, 
+                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=AVG_ITERATIONS)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.2) 
