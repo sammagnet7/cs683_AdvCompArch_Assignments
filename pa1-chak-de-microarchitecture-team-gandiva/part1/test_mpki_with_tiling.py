@@ -13,11 +13,11 @@ def extract_mpki(output):
     return None
 
 # Function to run the perf stat command and calculate average MPKI
-def run_perf_stat(executable, matrix_size, block_size, iterations=AVG_ITERATIONS):
+def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS):
     mpki_sum = 0.0
     for _ in range(iterations):
         bash_command = f"""
-        perf stat -x, -e instructions,L1-dcache-load-misses ./build/{executable} {matrix_size} {block_size} 2>&1 | 
+        perf stat -x, -e instructions,L1-dcache-load-misses ./build/{executable} {matrix_size} {tile_size} 2>&1 | 
         gawk --bignum '/instructions/ {{instructions=$1}}
         /L1-dcache-load-misses/ {{misses=$1}}
         END {{
@@ -32,9 +32,9 @@ def run_perf_stat(executable, matrix_size, block_size, iterations=AVG_ITERATIONS
     return mpki_sum / iterations
 
 # Function to plot the results
-def plot_results(matrix_size, mpki_over_matrix, block_size):
+def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
-    n_bars = len(block_size)
+    n_bars = len(tile_size)
     bar_width = 0.12
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
@@ -43,7 +43,7 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if block_size[i] == 0 else f'Block Size {block_size[i]}'
+        label = 'naive approach' if tile_size[i] == 0 else f'Block Size {tile_size[i]}'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -78,13 +78,13 @@ def plot_results(matrix_size, mpki_over_matrix, block_size):
 def main():
 
     matrix_size = [1000, 3000, 5000, 7000, 9000, 11000]
-    block_size = [0,4,8,16,32,48,56,64]
+    tile_size = [0,4,8,16,32,48,56,64]
 
     mpki_over_matrix = []
 
     for m in matrix_size:    
         mpki_over_block=[]   
-        for b in block_size:
+        for b in tile_size:
                 if(b==0):
                     mpki_over_block.append( round(run_perf_stat('naive', m, b),2)  )
                 else:
@@ -94,7 +94,7 @@ def main():
         mpki_over_matrix.append(mpki_over_block)
 
     # Plot the results
-    plot_results(matrix_size, mpki_over_matrix, block_size)
+    plot_results(matrix_size, mpki_over_matrix, tile_size)
 
 if __name__ == "__main__":
     main()
