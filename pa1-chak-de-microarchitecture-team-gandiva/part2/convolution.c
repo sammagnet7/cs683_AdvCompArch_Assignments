@@ -6,6 +6,8 @@
 const int LINE_SIZE = 64;                  // 64 Byte L1-D cache line
 const int LLC_size = 3 * 1024 * 1024 * 10; // 3 MB LLC cache
 
+int output_tile_size = 64; // Input by user otherwise Default 64
+
 void naive_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void tiled_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
 void simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size);
@@ -112,15 +114,21 @@ double measure_execution_time(void (*func)(double *, double *, double *, int, in
 
 int main(int argc, char **argv)
 {
-    if (argc <= 2)
+    if (argc <= 3)
     {
-        printf("Usage: matrix-dimension kernel-size\n\n");
+        printf("Usage: matrix-dimension kernel-size tile-size\n\n");
         return 0;
     }
 
     int dim = atoi(argv[1]);
     int kernel_size = atoi(argv[2]);
+    output_tile_size = atoi(argv[3]);
     int output_dim = dim - kernel_size + 1;
+
+    if(kernel_size % 8 != 0) {
+        printf("Provide Kernel size in multiple of 8\n");
+        return 0;
+    }
 
     // Allocate memory for the input and output images
     double *input_image = (double *)malloc(dim * dim * sizeof(double));
@@ -138,10 +146,10 @@ int main(int argc, char **argv)
     initialize_result_matrix(output_image, output_dim, output_dim);
 
     // Measure execution time and perform naive convolution
-    // double naive_time = measure_execution_time(naive_convolution, input_image, output_image, kernel, dim, output_dim, kernel_size);
+    double naive_time = measure_execution_time(naive_convolution, input_image, output_image, kernel, dim, output_dim, kernel_size);
 
     // Print the execution times and speedups
-    // printf("Naive Convolution Time: %f seconds\n", naive_time);
+     printf("Naive Convolution Time: %f seconds\n", naive_time);
 
 // Measure execution time and perform tiled convolution
 #ifdef OPTIMIZE_TILING
@@ -149,12 +157,12 @@ int main(int argc, char **argv)
     // initialize_result_matrix(optimized_op, output_dim, output_dim);
 
     double tiled_time = measure_execution_time(tiled_convolution, input_image, optimized_op, kernel, dim, output_dim, kernel_size);
-    // double tiled_speedup = naive_time / tiled_time;
-    // printf("Tiled Convolution Time: %f seconds, Speedup: %fx\n", tiled_time, tiled_speedup);
+    double tiled_speedup = naive_time / tiled_time;
+    printf("Tiled Convolution Time: %f seconds, Speedup: %fx\n", tiled_time, tiled_speedup);
     printf("Tiled Convolution Time: %f seconds\n", tiled_time);
 
 
-    // verify_correctness(output_image, optimized_op, output_dim);
+    verify_correctness(output_image, optimized_op, output_dim);
 
 #endif
 
@@ -267,7 +275,7 @@ void tiled_convolution(double *input_image, double *output_image, double *kernel
 {
     // Students need to implement this
 
-    int tile_size = 64 - kernel_size + 1; // output tile for a 64x64 input block
+    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
     input_image = (double *)__builtin_assume_aligned(input_image, LINE_SIZE);
     output_image = (double *)__builtin_assume_aligned(output_image, LINE_SIZE);
 
@@ -384,7 +392,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
 // Tiled SIMD convolution implementation
 void tiled_simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    int tile_size = 16; // Tile size (can be adjusted based on cache size)
+    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
@@ -495,7 +503,7 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
 void tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
     // Students need to implement this
-    int tile_size = 16; // 16 by 16 block
+    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
     input_image = (double *)__builtin_assume_aligned(input_image, LINE_SIZE);
     output_image = (double *)__builtin_assume_aligned(output_image, LINE_SIZE);
 
@@ -535,7 +543,7 @@ void tiled_prefetch_convolution(double *input_image, double *output_image, doubl
 
 void simd_tiled_prefetch_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    int tile_size = 16; // Tile size (can be adjusted based on cache size)
+    int tile_size = output_tile_size - kernel_size + 1; // adjusting source tiling to achieve destination tiling with output_tile_size
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
