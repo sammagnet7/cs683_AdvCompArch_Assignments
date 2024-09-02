@@ -32,8 +32,8 @@
 ### Testing values:
  * Element size: 8 Bytes [ size of Double ] 
  * Max Tile size = 55x55 (i.e. $\sqrt((48*1024/2)/8)$) [ As $2B^2<C$ where $C= 48 KByte$ ] 
- * Tile sizes: [4,8,16,24,32,40,48,56,64]
- * Matrix sizes: [5000,10000,15000,20000,250000,30000]
+ * Tile sizes: [0,4,8,16,32,48,56,64]
+ * Matrix sizes: [1000,3000,5000,10000,15000,20000]
  * Averaged over 5 rounds each
 
 # Part 1:
