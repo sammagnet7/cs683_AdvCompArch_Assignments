@@ -78,7 +78,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
     for i in range(n_bars):
         for j in range(len(matrix_size)):
             plt.text(bar_positions[i][j], mpki_over_matrix[j][i] + max(max(mpki_over_matrix)) * 0.03, 
-                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=AVG_ITERATIONS)
+                 str(mpki_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=FONT_SIZE)
 
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.2) 
