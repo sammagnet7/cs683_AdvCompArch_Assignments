@@ -4,7 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-executable='./build/prefetch'
+
+BUILD_DIR='../part1/build'
+EXEC_OPTIMIZED='prefetch'
+EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
 # Function to extract speedup from the output
 def extract_speedup(output):
@@ -18,7 +21,7 @@ def run_tiling_executable(matrix_size, iterations=10):
     speedup_sum = 0.0
     for _ in range(iterations):
         #'taskset','-c','1',
-        result = subprocess.run([executable, str(matrix_size), "0"], capture_output=True, text=True)
+        result = subprocess.run([EXECUTABLE, str(matrix_size), "0"], capture_output=True, text=True)
         speedup = extract_speedup(result.stdout)
         if speedup is not None:
             speedup_sum += speedup

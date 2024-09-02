@@ -5,6 +5,11 @@ import matplotlib.pyplot as plt
 import math
 FONT_SIZE = 18
 AVG_ITERATIONS = 5
+
+BUILD_DIR='../part1/build'
+EXEC_NAIVE='naive'
+EXEC_OPTIMIZED='tiling'
+
 # Function to extract MPKI from the output
 def extract_mpki(output):
     match = re.search(r"MPKI: ([\d.]+)", output)
@@ -17,7 +22,7 @@ def run_perf_stat(executable, matrix_size, tile_size, iterations=AVG_ITERATIONS)
     mpki_sum = 0.0
     for _ in range(iterations):
         bash_command = f"""
-        perf stat -x, -e instructions,L1-dcache-load-misses ./build/{executable} {matrix_size} {tile_size} 2>&1 | 
+        perf stat -x, -e instructions,L1-dcache-load-misses {BUILD_DIR}/{executable} {matrix_size} {tile_size} 2>&1 | 
         gawk --bignum '/instructions/ {{instructions=$1}}
         /L1-dcache-load-misses/ {{misses=$1}}
         END {{
@@ -43,7 +48,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'software prefetch'
+        label = 'naive approach' if tile_size[i] == 0 else f'Block Size {tile_size[i]}'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -55,7 +60,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title('MPKI vs Matrix Size for Software prefetch')
+    plt.title('MPKI vs Matrix Size for Different Tile Sizes')
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.2)
@@ -77,8 +82,8 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
 def main():
 
-    matrix_size = [5000,7000,9000]
-    tile_size = [0,-1] # 0 is for naive approach and -1 is for soft pre fetch
+    matrix_size = [1000, 3000, 5000, 7000, 9000, 11000]
+    tile_size = [0,4,8,16,32,48,56,64]
 
     mpki_over_matrix = []
 
@@ -86,9 +91,9 @@ def main():
         mpki_over_block=[]   
         for b in tile_size:
                 if(b==0):
-                    mpki_over_block.append( round(run_perf_stat('naive', m, b),2)  )
+                    mpki_over_block.append( round(run_perf_stat(EXEC_NAIVE, m, b),2)  )
                 else:
-                    mpki_over_block.append( round(run_perf_stat('prefetch', m, b),2) )
+                    mpki_over_block.append( round(run_perf_stat(EXEC_OPTIMIZED, m, b),2) )
 
         print(f"mpki calculated for matrix size:{m}")
         mpki_over_matrix.append(mpki_over_block)

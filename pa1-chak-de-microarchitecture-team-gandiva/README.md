@@ -8,7 +8,7 @@
 ### System details on which we are performing all the tests:
 
 * Processor: Intel(R) Core(TM) i7-14650HX
-* Hyper threading is turned off ( Script: {workspace}/hyper_thread_toggle.sh )
+* Hyper threading is turned off ( Script: {workspace}/scripts/hyper_thread_toggle.sh )
 *  CPU frequency: 5.2 GHz
 * Cache:
     * L1 D cache: 48 KB
