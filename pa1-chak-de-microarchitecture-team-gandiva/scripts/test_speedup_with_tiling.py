@@ -85,6 +85,8 @@ def main():
     for m in MATRIX_SIZE:
         speedup_over_block=[]
         for b in TILE_SIZE:
+            if b==0:
+                continue
             speedup_over_block.append( round(run_optimized_executable(m, b),2) )
 
         print(f"speedup calculated for matrix size:{m}")
