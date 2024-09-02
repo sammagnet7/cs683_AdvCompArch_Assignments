@@ -14,7 +14,7 @@ EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 
 
 MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
-TILE_SIZE = [0,4,8,16,32,48,56,64]
+TILE_SIZE = [0,4,8,16,32,48,56,64] # Tile size 0 indicates naive approach
 ################### customize #######################
 
 # Function to extract MPKI from the output
