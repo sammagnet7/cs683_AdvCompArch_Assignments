@@ -12,8 +12,8 @@ BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
 EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 
-MATRIX_SIZE = [1000, 3000, 5000]
-TILE_SIZE = [0,4,8,16,32] 
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
+TILE_SIZE = [0,4,8,16,32,48,56,64]
 ################### customize #######################
 
 # Function to extract Instructions from the output

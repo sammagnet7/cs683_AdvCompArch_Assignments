@@ -12,7 +12,7 @@ BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
 EXEC_OPTIMIZED='prefetch'# prefetch
 
-MATRIX_SIZE = [5000,7000,9000]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
 TILE_SIZE = [0,-1] # 0 is for naive approach and -1 is for soft pre fetch
 
 ################### customize #######################

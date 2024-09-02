@@ -12,8 +12,8 @@ BUILD_DIR='../part1/build'
 EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [5000,10000,15000,20000,250000,30000]
-TILE_SIZE = [4,8,16,32,48,56,64,128]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
+TILE_SIZE = [0,4,8,16,32,48,56,64]
 
 ################### customize #######################
 

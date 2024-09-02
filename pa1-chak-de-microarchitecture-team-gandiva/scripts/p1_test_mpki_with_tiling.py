@@ -13,7 +13,7 @@ EXEC_NAIVE='naive'
 EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 
 
-MATRIX_SIZE = [1000, 3000, 5000, 7000, 9000, 11000]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
 TILE_SIZE = [0,4,8,16,32,48,56,64]
 ################### customize #######################
 

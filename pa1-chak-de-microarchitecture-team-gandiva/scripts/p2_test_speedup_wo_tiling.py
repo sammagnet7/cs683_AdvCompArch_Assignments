@@ -12,7 +12,7 @@ BUILD_DIR='../part2/build'
 EXEC_OPTIMIZED='prefetch'   # prefetch simd simd-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [100, 300, 500, 700, 900, 1100]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
 
 ################### customize #######################
 
