@@ -103,6 +103,7 @@ def main():
         speedups_over_matrix.append(speedup_over_block)
     
     # Removes the invalid tile sizes
+    TILE_SIZE.remove(0)
     for b in del_tiles:
            TILE_SIZE.remove(b)
 

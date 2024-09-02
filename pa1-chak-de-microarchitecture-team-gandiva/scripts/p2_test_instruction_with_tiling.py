@@ -113,6 +113,7 @@ def main():
         print(f"Number of Instructions calculated for matrix size:{m}")
         instr_over_matrix.append(instr_over_block)
 
+    # Removes invalid tile sizes
     for b in del_tiles:
            TILE_SIZE.remove(b)
 

@@ -159,7 +159,6 @@ int main(int argc, char **argv)
     double tiled_time = measure_execution_time(tiled_convolution, input_image, optimized_op, kernel, dim, output_dim, kernel_size);
     double tiled_speedup = naive_time / tiled_time;
     printf("Tiled Convolution Time: %f seconds, Speedup: %fx\n", tiled_time, tiled_speedup);
-    printf("Tiled Convolution Time: %f seconds\n", tiled_time);
 
 
     verify_correctness(output_image, optimized_op, output_dim);

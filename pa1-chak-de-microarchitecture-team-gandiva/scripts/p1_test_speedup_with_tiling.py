@@ -12,8 +12,8 @@ BUILD_DIR='../part1/build'
 EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
-TILE_SIZE = [0,4,8,16,32,48,56,64]
+MATRIX_SIZE = [100, 300, 500]
+TILE_SIZE = [0,4,8,16]  # Tile size = 0 will be ignored
 
 ################### customize #######################
 
@@ -92,6 +92,7 @@ def main():
         print(f"speedup calculated for matrix size:{m}")
         speedups_over_matrix.append(speedup_over_block)
     
+    TILE_SIZE.remove(0)
     # Plot the results
     plot_results(MATRIX_SIZE, speedups_over_matrix, TILE_SIZE)
 
