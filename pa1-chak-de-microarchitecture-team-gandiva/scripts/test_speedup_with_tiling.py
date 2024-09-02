@@ -12,8 +12,8 @@ BUILD_DIR='../part1/build'
 EXEC_OPTIMIZED='tiling'
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [100, 300, 500, 700, 900, 1100]
-TILE_SIZE = [4,8,16,32]
+MATRIX_SIZE = [5000,10000,15000,20000,250000,30000]
+TILE_SIZE = [4,8,16,32,48,56,64,128]
 
 ################### customize #######################
 
@@ -58,7 +58,7 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED})')
+    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(speedups_over_matrix)) * 1.2)

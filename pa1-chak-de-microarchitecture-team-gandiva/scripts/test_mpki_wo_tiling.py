@@ -67,7 +67,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED})')
+    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.5)

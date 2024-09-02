@@ -50,7 +50,7 @@ def plot_results(matrix_size, speedups_over_matrix):
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED})')
+    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(speedups_over_matrix) * 1.2)
