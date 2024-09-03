@@ -410,7 +410,6 @@ void tiled_simd_convolution(double *input_image, double *output_image, double *k
                 {
                     __m256d sum = _mm256_setzero_pd();
                     double scalar_sum = 0;
-
                     // Perform SIMD convolution within the tile
                     for (int ki = 0; ki < kernel_size; ki++)
                     {

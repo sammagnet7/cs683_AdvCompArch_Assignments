@@ -9,9 +9,9 @@ BUILD_DIR = '../part2/build'
 EXEC_OPTIMIZED = 'all'
 EXECUTABLE = f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 AVG_ITERATIONS = 5
-MATRIX_SIZE = 5000  # Example matrix size
-TILE_SIZE = 32     # Example tile size
-KERNEL_SIZE = 8    # Example kernel size
+MATRIX_SIZE = 5000
+TILE_SIZE = 32 
+KERNEL_SIZE = 16
 
 # Techniques to track
 techniques = [
@@ -60,7 +60,7 @@ average_times = {technique: round(mean(times[technique]), 4) for technique in te
 df = pd.DataFrame(list(average_times.items()), columns=["Techniques", "Time taken"])
 
 # Plotting the table and saving as a PNG
-fig, ax = plt.subplots(figsize=(12, 8))  # Increased size to fill the page
+fig, ax = plt.subplots(figsize=(12, 3))  # Increased size to fill the page
 ax.axis('tight')
 ax.axis('off')
 
@@ -87,10 +87,9 @@ for (i, j), cell in the_table.get_celld().items():
 # Adjust the font size to make the table fill the page
 the_table.auto_set_font_size(False)
 the_table.set_fontsize(12)
-the_table.scale(1.2, 1.2)  # Scale the table to fill the space
 
 plt.tight_layout(pad=0)  # Minimize padding around the plot
 # Save the table as a PNG file with minimal margins and no white space
-plt.savefig('matrix_convolution_table.png', bbox_inches='tight', pad_inches=0.2, dpi=300)
+plt.savefig('matrix_convolution_table.png', bbox_inches='tight', dpi=300)
 
 print("Table saved successfully as 'matrix_convolution_table.png'.")
