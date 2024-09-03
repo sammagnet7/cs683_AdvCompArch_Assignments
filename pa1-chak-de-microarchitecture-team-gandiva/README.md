@@ -41,6 +41,8 @@
 ## 1A: Tile it to see it
 ### Plots:
 <img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_mpki_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_speedup_20K_64.png">
 
 ### Description:
 
@@ -48,21 +50,25 @@
 ## 1B: Fetch it but with soft corner (software prefetching)
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch_inst_20K.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch_mpki_20K.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch_speedup_20K.png">
 
 ### Description:
 
 ## 1C: Tiling + Prefetching
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_mpki_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_speedup_20K_64.png">
 
 ### Description:
 
 ## All techniques together:
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/part1_all_techniques.png">
 
 ### Description:
 
@@ -73,35 +79,84 @@
 ## 2A: Shhh SIMD in action
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_16.png">
 
 ### Description:
 
 ## 2B: Tile it again
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_16.png">
 
 ### Description:
 
 ## 2C: Software Prefetching
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch_speedup_10K_16.png">
 
 ### Description:
 
 ## 2D: Hum saath saath hain 
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+#### simd-prefecth
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_speedup_10K_16.png">
+
+
+#### tiling-prefetch
+
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_speedup_10K_16.png">
+
+
+#### tiling-simd
+
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_speedup_10K_16.png">
+
+#### tiling-simd-prefetch
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_16.png">
 
 ### Description:
 
 ## All techniques together:
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part2/part2_all_techniques.png">
 
 ### Description:
 
