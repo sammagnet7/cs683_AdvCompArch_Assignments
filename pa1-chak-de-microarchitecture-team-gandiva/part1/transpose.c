@@ -6,8 +6,8 @@
 #include <immintrin.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-const int LINE_SIZE = 64;             // 64 Byte L1-D cache line
-const int LLC_size = 3 * 1024 * 1024; // 3 MB LLC cache
+const int LINE_SIZE = 64;              // 64 Byte L1-D cache line
+const int LLC_size = 30 * 1024 * 1024; // 30 MB LLC cache
 
 void verify_correctness(double *C, double *D, int dim)
 {
@@ -93,18 +93,8 @@ void prefetchMatrixTranspose(double *matrix, double *transpose, int size)
     {
         for (int j = 0; j < size; j++)
         {
-            // prefetch matrix (row wise) : 2 lines
-            if (j % src_pf_distance == 0)
-            {
-                if ((j + src_pf_distance + 0) < size)
-                    _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 0)], _MM_HINT_T0);
-                if ((j + src_pf_distance + 8) < size)
-                    _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 8)], _MM_HINT_T0);
-                // if ((j + src_pf_distance + 16) < size)
-                //     _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 16)], _MM_HINT_T0);
-                // if ((j + src_pf_distance + 24) < size)
-                //     _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 24)], _MM_HINT_T0);
-            }
+            _mm_prefetch((char *)&matrix[i * size + (j + 16)], _MM_HINT_T0);
+            _mm_prefetch((char *)&transpose[(j + 8) * size + i], _MM_HINT_T0);
 
             transpose[j * size + i] = matrix[i * size + j];
         }
@@ -129,29 +119,17 @@ void tiledPrefetchedMatrixTranspose(double *matrix, double *transpose, int size,
         {
             for (int i = ii; i < ii + blockSize && i < size; i++)
             {
-                for (int j = jj; j < jj + blockSize && j < size; j+=4) // Unroll by 4
-                {   
+                for (int j = jj; j < jj + blockSize && j < size; j += 4) // Unroll by 4
+                {
                     // Row wise pre fetch
-                    if (j % src_pf_distance == 0)
-                    {
-                        if ((j + src_pf_distance + 0) < size)
-                            _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 0)], _MM_HINT_T0);
-                        if ((j + src_pf_distance + 8) < size)
-                            _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 8)], _MM_HINT_T0);
-                        if ((j + src_pf_distance + 16) < size)
-                            _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 16)], _MM_HINT_T0);
-                        if ((j + src_pf_distance + 24) < size)
-                            _mm_prefetch((char *)&matrix[i * size + (j + src_pf_distance + 24)], _MM_HINT_T0);
-                    }
+                    _mm_prefetch((char *)&matrix[i * size + (j + 8)], _MM_HINT_T0);
+                    _mm_prefetch((char *)&matrix[i * size + (j + 16)], _MM_HINT_T0);
+                    _mm_prefetch((char *)&matrix[i * size + (j + 24)], _MM_HINT_T0);
+                    _mm_prefetch((char *)&matrix[i * size + (j + 32)], _MM_HINT_T0);
+                    // _mm_prefetch((char *)&matrix[i * size + (j + 40)], _MM_HINT_T0);
 
                     // Column wise pre fetch
-                    // if (i % elements_in_line == 0 && (j% (blockSize/4))==0) 
-                    // {
-                    //     _mm_prefetch((char *)&transpose[((j + dest_pf_distance + 0)) * size + i ], _MM_HINT_T0);
-                    //     _mm_prefetch((char *)&transpose[((j + dest_pf_distance + 1)) * size + i], _MM_HINT_T0);
-                    //     _mm_prefetch((char *)&transpose[((j + dest_pf_distance + 2)) * size + i], _MM_HINT_T0);
-                    //     _mm_prefetch((char *)&transpose[((j + dest_pf_distance + 3)) * size + i], _MM_HINT_T0);
-                    // }
+                    _mm_prefetch((char *)&transpose[((j + 14)) * size + i], _MM_HINT_T0);
 
                     transpose[j * size + i] = matrix[i * size + j];
                     if (j + 1 < size)

@@ -368,10 +368,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
         for (int j = 0; j < output_dim; j++) // Finalises the jth item value in ith row after each iteration
         {
             double sum = 0.0;
-            _mm_prefetch((char *)&input_image[(i + 7) * dim + j], _MM_HINT_T0);
-            // _mm_prefetch((char *)&input_image[(i + kernel_size - 2) * dim + j], _MM_HINT_T0);
-            // _mm_prefetch((char *)&input_image[(i)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
-            // _mm_prefetch((char *)&input_image[(i + 1) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
+            _mm_prefetch((char *)&input_image[(i + kernel_size) * dim + j], _MM_HINT_T0);
 
             for (int ki = 0; ki < kernel_size; ki++) // Kernel rows
             {
@@ -379,6 +376,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
                 {
                     int x = i + ki;
                     int y = j + kj;
+                    
                     sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
                 }
             }
@@ -466,8 +464,8 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
             for (int ki = 0; ki < kernel_size; ki++)
             {
                 int x = i + ki;
-                _mm_prefetch((char *)&input_image[(i)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
-                _mm_prefetch((char *)&input_image[(i + 1) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
+                _mm_prefetch((char *)&input_image[(i+kernel_size-1)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
+                _mm_prefetch((char *)&input_image[(i + kernel_size) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
 
                 for (int kj = 0; kj < simd_width; kj += 4)
                 { // Process 4 elements at a time
@@ -516,10 +514,8 @@ void tiled_prefetch_convolution(double *input_image, double *output_image, doubl
                 for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     double sum = 0.0;
-                    _mm_prefetch((const char *)&input_image[(ii + 4) * dim + jj], _MM_HINT_T1);
-                    _mm_prefetch((const char *)&input_image[(ii + 5) * dim + jj], _MM_HINT_T1);
-                    _mm_prefetch((const char *)&input_image[(ii + 6) * dim + jj], _MM_HINT_T1);
-                    _mm_prefetch((const char *)&input_image[(ii + 7) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + kernel_size - 1) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + kernel_size) * dim + jj], _MM_HINT_T1);
                     // Perform convolution on the tile
                     for (int ki = 0; ki < kernel_size; ki++)
                     {
@@ -552,6 +548,7 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
     output_image = (double *)__builtin_assume_aligned(output_image, 64);
 
     // Iterate over the output image in tiles
+     // Iterate over the output image in tiles
     for (int i = 0; i < output_dim; i += output_tile_size)
     {
         for (int j = 0; j < output_dim; j += output_tile_size)
@@ -563,33 +560,32 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
                 {
                     __m256d sum = _mm256_setzero_pd();
                     double scalar_sum = 0;
+                    _mm_prefetch((const char *)&input_image[(ii + kernel_size - 1) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + kernel_size) * dim + jj], _MM_HINT_T1);
+
 
                     // Perform SIMD convolution within the tile
                     for (int ki = 0; ki < kernel_size; ki++)
                     {
                         int x = ii + ki;
 
-                        _mm_prefetch((char *)&input_image[(x)*dim + ((jj + 24) & (dim - 1))], _MM_HINT_T0);
-
-                        for (int kj = 0; kj < simd_width / 2; kj += 8)
+                        for (int kj = 0; kj < simd_width; kj += 8)
                         { // Process 4 elements at a time
                             int y = jj + kj;
 
                             // Load 4 pixels from the input image
-                            __m256d input_vec1 = _mm256_loadu_pd(&input_image[x * dim + y]);
+                            __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
+                            __m256d input_vec_2 = _mm256_loadu_pd(&input_image[x * dim + y+4]);
 
                             // Load 4 kernel values
-                            __m256d kernel_vec1 = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                            __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                            __m256d kernel_vec_2 = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
 
                             // Multiply and accumulate
-                            __m256d result_vec1 = _mm256_mul_pd(input_vec1, kernel_vec1);
-                            sum = _mm256_add_pd(result_vec1, sum);
-
-                            // Unroll 2
-                            __m256d input_vec2 = _mm256_loadu_pd(&input_image[x * dim + y + 4]);
-                            __m256d kernel_vec2 = _mm256_loadu_pd(&kernel[ki * kernel_size + kj + 4]);
-                            __m256d result_vec2 = _mm256_mul_pd(input_vec2, kernel_vec2);
-                            sum = _mm256_add_pd(result_vec2, sum);
+                            __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
+                            __m256d result_vec_2 = _mm256_mul_pd(input_vec_2, kernel_vec_2);
+                            sum = _mm256_add_pd(result_vec, sum);
+                            sum = _mm256_add_pd(result_vec_2, sum);
                         }
 
                         // Handle the remainder part that cannot be processed by SIMD
