@@ -6,14 +6,14 @@ import math
 
 ################### customize #######################
 FONT_SIZE = 18
-AVG_ITERATIONS = 5
+AVG_ITERATIONS = 1
 
 BUILD_DIR='../part2/build'
 EXEC_OPTIMIZED='tiling' # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
-TILE_SIZE = [0,4,8,16,32,48,56,64] 
+MATRIX_SIZE = [1000, 3000]
+TILE_SIZE = [0,4,8,16,32] 
 
 ################### customize #######################
 
@@ -39,7 +39,7 @@ def run_optimized_executable(matrix_size, tile_size, KERNEL_SIZE, iterations=AVG
 
 # Function to plot the results
 def plot_results(matrix_size, speedups_over_matrix, tile_size, KERNEL_SIZE):
-
+    print(speedups_over_matrix)
     n_bars = len(tile_size)
     bar_width = 0.11
 

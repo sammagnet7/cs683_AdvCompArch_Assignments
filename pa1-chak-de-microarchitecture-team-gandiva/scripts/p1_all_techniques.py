@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 # Global variables
 FONT_SIZE = 18
-AVG_ITERATIONS = 10
+AVG_ITERATIONS = 2
 BUILD_DIR = '../part1/build'
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
-TILE_SIZE = 16   # Optimal value 32, found after testing
+MATRIX_SIZE = [1000, 3000, 5000]
+TILE_SIZE = 32   # Optimal value 32, found after testing
 
 techniques = [
     "tiling",
@@ -75,7 +75,7 @@ def plot_results(matrix_size, speedups_over_matrix, techniques):
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.show()
+    plt.savefig("part1_all_techniques.png")
 
 # Main script to collect speedup data and plot it
 if __name__ == "__main__":

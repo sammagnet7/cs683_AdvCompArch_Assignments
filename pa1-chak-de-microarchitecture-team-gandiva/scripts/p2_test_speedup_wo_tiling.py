@@ -12,7 +12,7 @@ BUILD_DIR='../part2/build'
 EXEC_OPTIMIZED='prefetch'   # prefetch simd simd-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000]
 
 ################### customize #######################
 
@@ -70,7 +70,7 @@ def plot_results(matrix_size, speedups_over_matrix, KERNEL_SIZE):
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.show()
+    plt.savefig("simd_speedup_15K.png")
 
 def main():
     

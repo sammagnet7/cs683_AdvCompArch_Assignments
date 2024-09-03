@@ -6,13 +6,13 @@ import math
 
 ################### customize #######################
 FONT_SIZE = 18
-AVG_ITERATIONS = 2
+AVG_ITERATIONS = 5
 
 BUILD_DIR='../part2/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED=['simd', 'prefetch', 'simd-prefetch']
+EXEC_OPTIMIZED=['simd','prefetch','simd-prefetch']
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000]
+MATRIX_SIZE = [1000, 3000, 5000]
 TILE_SIZE = [0,-1]  # 0 is for naive approach and -1 is for other optimized approach
 
 ################### customize #######################
@@ -25,7 +25,7 @@ def extract_instr(output):
     return None
 
 def extract_speedup(output):
-    match = re.search(r"Speedup: ([\d.]+)", output)
+    match = re.search(r"Speedup:([\d.]+)", output)
     if match:
         return float(match.group(1))
     return None
@@ -46,14 +46,15 @@ def run_perf_stat(executable, matrix_size, tile_size, KERNEL_SIZE, iterations=AV
         perf stat -x, -e instructions,L1-dcache-load-misses {BUILD_DIR}/{executable} {matrix_size} {KERNEL_SIZE} {tile_size} 2>&1 | 
         gawk --bignum '/instructions/ {{instructions=$1}}
         /L1-dcache-load-misses/ {{misses=$1}}
+        /Speedup/ {{label=$(NF-1); speedup=$NF}}
         END {{
             mpki = ((misses * 1000) / instructions); 
             printf "\\nInstructions: %d\\n", instructions;
             printf "\\nMPKI: %.2f\\n", mpki;
+            printf label speedup;
         }}'
         """
         result = subprocess.run(bash_command, shell=True, capture_output=True, text=True)
-        
         instr = extract_instr(result.stdout)
         mpki = extract_mpki(result.stdout)
         speedup = extract_speedup(result.stdout)
@@ -69,7 +70,7 @@ def run_perf_stat(executable, matrix_size, tile_size, KERNEL_SIZE, iterations=AV
     instr_avg = round(instr_avg / 1000000000, 2)# Billion instructions
     mpki_avg = round(mpki_sum / iterations, 2)
     avg_speedup = round(speedup_sum / iterations, 2)
-    print(f"{executable} {matrix_size} {tile_size}" )
+    print(f"{executable} {matrix_size} Done" )
     return instr_avg, mpki_avg, avg_speedup
 
 # Function to plot the results
@@ -84,7 +85,7 @@ def plot_results_inst(executable, matrix_size, instr_over_matrix, tile_size, KER
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'{EXEC_OPTIMIZED}'
+        label = 'naive approach' if tile_size[i] == 0 else f'{executable}'
         plt.bar(bar_positions[i], [instr[i] for instr in instr_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -96,7 +97,7 @@ def plot_results_inst(executable, matrix_size, instr_over_matrix, tile_size, KER
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'Number of Instructions vs Matrix Size for optimization ({EXEC_OPTIMIZED} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
+    plt.title(f'Number of Instructions vs Matrix Size for optimization ({executable} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(instr_over_matrix)) * 1.2)
@@ -114,7 +115,7 @@ def plot_results_inst(executable, matrix_size, instr_over_matrix, tile_size, KER
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.savefig(f"{executable}_inst_15K_{KERNEL_SIZE}.png")
+    plt.savefig(f"{executable}_inst_10K_{KERNEL_SIZE}.png")
 
 def plot_results_mpki(executable,matrix_size, mpki_over_matrix, tile_size, KERNEL_SIZE):
 
@@ -127,7 +128,7 @@ def plot_results_mpki(executable,matrix_size, mpki_over_matrix, tile_size, KERNE
 
     # Plotting the bars
     for i in range(n_bars):
-        label = 'naive approach' if tile_size[i] == 0 else f'{EXEC_OPTIMIZED}'
+        label = 'naive approach' if tile_size[i] == 0 else f'{executable}'
         plt.bar(bar_positions[i], [mpki[i] for mpki in mpki_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -139,7 +140,7 @@ def plot_results_mpki(executable,matrix_size, mpki_over_matrix, tile_size, KERNE
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'MPKI vs Matrix Size for optimization ({EXEC_OPTIMIZED} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
+    plt.title(f'MPKI vs Matrix Size for optimization ({executable} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(max(mpki_over_matrix)) * 1.5)
@@ -157,15 +158,15 @@ def plot_results_mpki(executable,matrix_size, mpki_over_matrix, tile_size, KERNE
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.savefig(f"{executable}_mpki_15K_{KERNEL_SIZE}.png")
+    plt.savefig(f"{executable}_mpki_10K_{KERNEL_SIZE}.png")
 
 def plot_results_speedup(executable,matrix_size, speedups_over_matrix, KERNEL_SIZE):
 
-    bar_width = 30
+    bar_width = 300
 
     plt.figure(figsize=(14, 6))
 
-    bars = plt.bar(matrix_size, speedups_over_matrix, color='skyblue', edgecolor='black', width=bar_width, label=f'{EXEC_OPTIMIZED}')
+    bars = plt.bar(matrix_size, speedups_over_matrix, color='skyblue', edgecolor='black', width=bar_width, label=f'{executable}')
 
     # Adding the x-axis labels
     plt.xticks(matrix_size, fontsize=FONT_SIZE)
@@ -176,7 +177,7 @@ def plot_results_speedup(executable,matrix_size, speedups_over_matrix, KERNEL_SI
 
     plt.xlabel('Matrix Size', fontsize=FONT_SIZE)
 
-    plt.title(f'Speedup vs Matrix Size for optimization ({EXEC_OPTIMIZED} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
+    plt.title(f'Speedup vs Matrix Size for optimization ({executable} with KERNEL_SIZE={KERNEL_SIZE})', fontsize=FONT_SIZE)
 
     # Adjusting y-axis limit to make space for the labels
     plt.ylim(0, max(speedups_over_matrix) * 1.3)
@@ -194,7 +195,7 @@ def plot_results_speedup(executable,matrix_size, speedups_over_matrix, KERNEL_SI
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.savefig(f"{executable}_speedup_15K_{KERNEL_SIZE}.png")
+    plt.savefig(f"{executable}_speedup_10K_{KERNEL_SIZE}.png")
 
 
 def main():
@@ -224,7 +225,7 @@ def main():
             print(f"Calculated for matrix size:{m} program {execs}")
             over_matrix['instruction'].append(over_block_inst)
             over_matrix['mpki'].append(over_block_mpki)
-            over_matrix['speedup'].append(over_block_speedup)
+            over_matrix['speedup'].extend(over_block_speedup)
 
         # Plot the results
         plot_results_inst(execs, MATRIX_SIZE, over_matrix['instruction'], TILE_SIZE, KERNEL_SIZE)

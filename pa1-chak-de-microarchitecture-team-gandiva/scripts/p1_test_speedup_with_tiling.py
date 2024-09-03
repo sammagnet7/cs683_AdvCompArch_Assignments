@@ -9,7 +9,7 @@ FONT_SIZE = 18
 AVG_ITERATIONS = 5
 
 BUILD_DIR='../part1/build'
-EXEC_OPTIMIZED='tiling' # tiling tiling-prefetch
+EXEC_OPTIMIZED='tiling-prefetch' # tiling tiling-prefetch
 EXECUTABLE=f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 
 MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
@@ -76,7 +76,8 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.show()
+    plt.savefig("tilingprefetch_speedup_20K_64.png")
+
 
 def main():
 

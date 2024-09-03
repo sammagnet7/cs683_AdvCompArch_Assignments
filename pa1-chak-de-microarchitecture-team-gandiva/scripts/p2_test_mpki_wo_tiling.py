@@ -10,9 +10,9 @@ AVG_ITERATIONS = 5
 
 BUILD_DIR='../part2/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED='prefetch' # prefetch simd simd-prefetch
+EXEC_OPTIMIZED='simd' # prefetch simd simd-prefetch
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000]
 TILE_SIZE = [0,-1]      # 0 is for naive approach and -1 is for other optimized approach
 
 ################### customize #######################
@@ -88,7 +88,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size, KERNEL_SIZE):
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.show()
+    plt.savefig("simd_mpki_15K.png")
 
 def main():
 

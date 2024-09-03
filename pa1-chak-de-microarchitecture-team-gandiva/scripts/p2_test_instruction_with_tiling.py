@@ -6,14 +6,14 @@ import math
 
 ################### customize #######################
 FONT_SIZE = 18
-AVG_ITERATIONS = 5
+AVG_ITERATIONS = 2
 
 BUILD_DIR='../part2/build'
 EXEC_NAIVE='naive'
 EXEC_OPTIMIZED='tiling' # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
 
-MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000, 20000]
-TILE_SIZE = [0,4,8,16,32,48,56,64] # Add 0 for naive approach
+MATRIX_SIZE = [1000, 3000, 5000, 10000, 15000]
+TILE_SIZE = [0,8,16,32,48,64] # Add 0 for naive approach
 
 ################### customize #######################
 

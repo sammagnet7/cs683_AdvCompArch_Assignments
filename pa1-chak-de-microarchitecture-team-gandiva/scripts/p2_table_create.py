@@ -9,8 +9,8 @@ BUILD_DIR = '../part2/build'
 EXEC_OPTIMIZED = 'all'
 EXECUTABLE = f'{BUILD_DIR}/{EXEC_OPTIMIZED}'
 AVG_ITERATIONS = 10
-MATRIX_SIZE = 512  # Example matrix size
-TILE_SIZE = 16     # Example tile size
+MATRIX_SIZE = 5000  # Example matrix size
+TILE_SIZE = 32     # Example tile size
 KERNEL_SIZE = 8    # Example kernel size
 
 # Techniques to track
