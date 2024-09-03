@@ -40,9 +40,9 @@
 
 ## 1A: Tile it to see it
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_mpki_20K_64.png">
-<img title="a title" alt="Alt text" src="./plots/part1/tiling_speedup_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling/tiling_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling/tiling_mpki_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling/tiling_speedup_20K_64.png">
 
 ### Description:
 1. We observe instructions increases but MPKI dropped when moving from naive to tiling due to elements are getting reused before being replaced.
@@ -55,9 +55,9 @@
 ## 1B: Fetch it but with soft corner (software prefetching)
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/prefetch_inst_20K.png">
-<img title="a title" alt="Alt text" src="./plots/part1/prefetch_mpki_20K.png">
-<img title="a title" alt="Alt text" src="./plots/part1/prefetch_speedup_20K.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch/prefetch_inst_20K.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch/prefetch_mpki_20K.png">
+<img title="a title" alt="Alt text" src="./plots/part1/prefetch/prefetch_speedup_20K.png">
 
 ### Description:
 1. We observe instructions increases when moving from naive to software prefetching. This is due to extra prefetch instructions generated.
@@ -69,9 +69,9 @@
 ## 1C: Tiling + Prefetching
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_inst_20K_64.png">
-<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_mpki_20K_64.png">
-<img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_speedup_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling+prefetch/tilingprefetch_inst_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling+prefetch/tilingprefetch_mpki_20K_64.png">
+<img title="a title" alt="Alt text" src="./plots/part1/tiling+prefetch/tilingprefetch_speedup_20K_64.png">
 
 ### Description:
 1. We observe instructions increases when moving from naive to prefetch+tiling. This is expected as both tiling and prefetch techniques generated more instructions when considered in isolation.
@@ -96,12 +96,12 @@ We can see tiling+prefetch technique gives the best speedup.
 ## 2A: Shhh SIMD in action
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part2/simd_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd/simd_speedup_10K_16.png">
 
 ### Description:
 1. As we move to SIMD we see instructions increases. We inspected the assembly and observed multiple vmovapd instructions being generated for loading the 256 bit ymm0 register.
@@ -111,12 +111,12 @@ We can see tiling+prefetch technique gives the best speedup.
 ## 2B: Tile it again
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling/tiling_speedup_10K_16.png">
 
 ### Description:
 1. We observe no change in MPKI for when applying tiled 2D convolution. Since in naive approach the access pattern is not evicting lines that contains useful data before they are used.
@@ -127,12 +127,12 @@ We can see tiling+prefetch technique gives the best speedup.
 ## 2C: Software Prefetching
 
 ### Plots:
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/prefetch_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/prefetch/prefetch_speedup_10K_16.png">
 
 ### Description:
 1. We see an increase in number of instruction when applying software prefetching as prefetch instructions are now introduced.
@@ -148,40 +148,40 @@ We can see tiling+prefetch technique gives the best speedup.
 
 ### Plots:
 #### simd-prefetch
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/simd+prefetch/simd-prefetch_speedup_10K_16.png">
 
 
 #### tiling-prefetch
 
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-prefetch_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+prefetch/tiling-prefetch_speedup_10K_16.png">
 
 
 #### tiling-simd
 
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd/tiling-simd_speedup_10K_16.png">
 
 #### tiling-simd-prefetch
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_inst_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_inst_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_mpki_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_mpki_10K_16.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_8.png">
-<img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_inst_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_inst_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_mpki_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_mpki_10K_16.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_speedup_10K_8.png">
+<img title="a title" alt="Alt text" src="./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_speedup_10K_16.png">
 
 ## All techniques together:
 
