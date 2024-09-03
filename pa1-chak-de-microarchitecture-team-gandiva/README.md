@@ -229,7 +229,7 @@
 ![Tiling+ SIMD + Prefetch MPKI 10K 8](./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_mpki_10K_8.png)
 ![Tiling+ SIMD + Prefetch MPKI 10K 16](./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_mpki_10K_16.png)
 ![Tiling+ SIMD + Prefetch Speedup 10K 8](./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_speedup_10K_8.png)
-![Tiling+ SIMD + Prefetch Speedup 10K 16](./plots/part2/simd+prefetch/simd-prefetch_speedup_10K_16.png)
+![Tiling+ SIMD + Prefetch Speedup 10K 16](./plots/part2/tiling+simd+prefetch/tiling-simd-prefetch_speedup_10K_16.png)
 
 ### **All Techniques Together**
 
