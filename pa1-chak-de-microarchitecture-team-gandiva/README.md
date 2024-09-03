@@ -45,6 +45,11 @@
 <img title="a title" alt="Alt text" src="./plots/part1/tiling_speedup_20K_64.png">
 
 ### Description:
+We observe instructions increases but MPKI dropped when moving from naive to tiling due to elements are getting reused before being replaced.
+
+As we increase tile size we observe a decrease in MPKI until it saturates
+
+we achieved around 2.6x speedup compared to naive. The speedup was contributed by the tiling technique.
 
 
 ## 1B: Fetch it but with soft corner (software prefetching)
@@ -55,6 +60,9 @@
 <img title="a title" alt="Alt text" src="./plots/part1/prefetch_speedup_20K.png">
 
 ### Description:
+We observe instructions increases and so does MPKI when moving from naive to software prefetching. This is due to extra prefetch instructions generated which misses in the L1-d cache.
+
+we achieved around 1.45x speedup due to prefetching technique.
 
 ## 1C: Tiling + Prefetching
 
@@ -64,6 +72,11 @@
 <img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_speedup_20K_64.png">
 
 ### Description:
+We observe instructions increases but MPKI dropped when moving from naive to prefetch+tiling technique.
+
+As we increase tile size we observe a decrease in MPKI until it saturates. For matrix sizes greater than 5000 MPKI is fairly constant when looking at each tile size.
+
+we achieved around 2.8x speedup compared to naive. The speedup was contributed by combined effect of tiling and prefetching technique.
 
 ## All techniques together:
 
@@ -72,7 +85,7 @@
 
 ### Description:
 
-
+We can see tiling+prefetch technique gives the best speedup.
 
 # Task 2 (2D convolution)
 
@@ -87,6 +100,9 @@
 <img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_16.png">
 
 ### Description:
+As we move to SIMD we see instructions increases
+
+We achieved 2x speedup using simd technique. Speedup is due to vectorised operations.
 
 ## 2B: Tile it again
 
@@ -99,6 +115,7 @@
 <img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_16.png">
 
 ### Description:
+As we increase kernel size from 8 to 16 MPKI drops. Matrix size has measurable effect.
 
 ## 2C: Software Prefetching
 
@@ -154,7 +171,7 @@
 ### Description:
 
 ## All techniques together:
-
+In this we observe simd techniques gives the best speedup. Other techniques doesnt work as the source is accessed row wise.
 ### Plots:
 <img title="a title" alt="Alt text" src="./plots/part2/part2_all_techniques.png">
 
