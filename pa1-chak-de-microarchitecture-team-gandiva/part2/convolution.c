@@ -4,7 +4,7 @@
 #include <math.h>
 #include <immintrin.h>                     // For SIMD intrinsics
 const int LINE_SIZE = 64;                  // 64 Byte L1-D cache line
-const int LLC_size = 3 * 1024 * 1024 * 10; // 3 MB LLC cache
+const int LLC_size = 30 * 1024 * 1024 * 10; // 3 MB LLC cache
 
 int source_tile_size = 64; // Source tile size is input by user, Default 64
 
@@ -368,7 +368,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
         for (int j = 0; j < output_dim; j++) // Finalises the jth item value in ith row after each iteration
         {
             double sum = 0.0;
-            _mm_prefetch((char *)&input_image[(i + kernel_size) * dim + j], _MM_HINT_T0);
+            _mm_prefetch((char *)&input_image[(i + 8) * dim + j], _MM_HINT_T0);
 
             for (int ki = 0; ki < kernel_size; ki++) // Kernel rows
             {
@@ -464,8 +464,8 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
             for (int ki = 0; ki < kernel_size; ki++)
             {
                 int x = i + ki;
-                _mm_prefetch((char *)&input_image[(i+kernel_size-1)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
-                _mm_prefetch((char *)&input_image[(i + kernel_size) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
+                _mm_prefetch((char *)&input_image[(i+8)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
+                _mm_prefetch((char *)&input_image[(i + 9) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
 
                 for (int kj = 0; kj < simd_width; kj += 4)
                 { // Process 4 elements at a time
@@ -514,8 +514,8 @@ void tiled_prefetch_convolution(double *input_image, double *output_image, doubl
                 for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
                     double sum = 0.0;
-                    _mm_prefetch((const char *)&input_image[(ii + kernel_size - 1) * dim + jj], _MM_HINT_T1);
-                    _mm_prefetch((const char *)&input_image[(ii + kernel_size) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + 8) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + 9) * dim + jj], _MM_HINT_T1);
                     // Perform convolution on the tile
                     for (int ki = 0; ki < kernel_size; ki++)
                     {
@@ -560,8 +560,8 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
                 {
                     __m256d sum = _mm256_setzero_pd();
                     double scalar_sum = 0;
-                    _mm_prefetch((const char *)&input_image[(ii + kernel_size - 1) * dim + jj], _MM_HINT_T1);
-                    _mm_prefetch((const char *)&input_image[(ii + kernel_size) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + 8) * dim + jj], _MM_HINT_T1);
+                    _mm_prefetch((const char *)&input_image[(ii + 9) * dim + jj], _MM_HINT_T1);
 
 
                     // Perform SIMD convolution within the tile

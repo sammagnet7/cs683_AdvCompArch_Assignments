@@ -6,7 +6,7 @@ import math
 
 ################### customize #######################
 FONT_SIZE = 18
-AVG_ITERATIONS = 5
+AVG_ITERATIONS = 3
 
 BUILD_DIR='../part1/build'
 EXEC_NAIVE='naive'
@@ -51,7 +51,7 @@ def plot_results(matrix_size, mpki_over_matrix, tile_size):
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 8))
 
     # Plotting the bars
     for i in range(n_bars):

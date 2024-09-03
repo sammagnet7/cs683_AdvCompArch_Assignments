@@ -42,7 +42,7 @@ def plot_results(matrix_size, speedups_over_matrix, tile_size):
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 8))
 
     # Plotting the bars
     for i in range(n_bars):

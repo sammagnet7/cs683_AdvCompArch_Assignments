@@ -6,11 +6,11 @@ import math
 
 ################### customize #######################
 FONT_SIZE = 18
-AVG_ITERATIONS = 5
+AVG_ITERATIONS = 2
 
 BUILD_DIR='../part2/build'
 EXEC_NAIVE='naive'
-EXEC_OPTIMIZED=['tiling', 'tiling-prefetch', 'tiling-simd', 'tiling-simd-prefetch'] # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
+EXEC_OPTIMIZED=['tiling','tiling-prefetch', 'tiling-simd', 'tiling-simd-prefetch'] # tiling, tiling-prefetch, tiling-simd, tiling-simd-prefetch
 
 MATRIX_SIZE = [1000, 3000, 5000]
 TILE_SIZE = [0,16,32,48,64] # Add 0 for naive approach
@@ -70,7 +70,7 @@ def run_perf_stat(executable, matrix_size, tile_size, KERNEL_SIZE, iterations=AV
     instr_avg = round(instr_avg / 1000000000, 2)# Billion instructions
     mpki_avg = round(mpki_sum / iterations, 2)
     avg_speedup = round(speedup_sum / iterations, 2)
-    print(f"{executable} {matrix_size} {tile_size} Done" )
+    print(f"{executable} {matrix_size} {tile_size}, instructions {instr_avg}" )
     return instr_avg, mpki_avg, avg_speedup
 
 # Function to plot the results
@@ -81,7 +81,7 @@ def plot_results_inst(executable, matrix_size, instr_over_matrix, tile_size, KER
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 8))
 
     # Plotting the bars
     for i in range(n_bars):
@@ -125,7 +125,7 @@ def plot_results_mpki(executable,matrix_size, mpki_over_matrix, tile_size, KERNE
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 8))
 
     # Plotting the bars
     for i in range(n_bars):
@@ -168,11 +168,11 @@ def plot_results_speedup(executable,matrix_size, speedups_over_matrix, tile_size
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 8))
 
     # Plotting the bars
-    for i in range(n_bars):
-        label = f'Tile Size {tile_size[i]}'
+    for i in range(n_bars - 1):
+        label = f'Tile Size {tile_size[i+1]}'
         plt.bar(bar_positions[i], [speedup[i] for speedup in speedups_over_matrix], width=bar_width, label=label)
 
     # Adding the x-axis labels
@@ -193,7 +193,7 @@ def plot_results_speedup(executable,matrix_size, speedups_over_matrix, tile_size
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4, fontsize=FONT_SIZE)
 
     # Adding values on top of bars
-    for i in range(n_bars):
+    for i in range(n_bars-1):
         for j in range(len(matrix_size)):
             plt.text(bar_positions[i][j], speedups_over_matrix[j][i] + max(max(speedups_over_matrix)) * 0.03, 
                  str(speedups_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=FONT_SIZE)
@@ -238,8 +238,6 @@ def main():
             over_matrix['speedup'].append(over_block_speedup)
 
         # Removes invalid tile sizes
-        if 0 in TILE_SIZE:
-            TILE_SIZE.remove(0)
         for b in del_tiles:
                TILE_SIZE.remove(b)
 

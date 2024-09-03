@@ -85,10 +85,6 @@ void prefetchMatrixTranspose(double *matrix, double *transpose, int size)
     matrix = (double *)__builtin_assume_aligned(matrix, LINE_SIZE); // 64 Bytes long cache line
     transpose = (double *)__builtin_assume_aligned(transpose, LINE_SIZE);
 
-    int elements_in_line = LINE_SIZE / 8;         // size(double)=>8
-    int src_pf_distance = (elements_in_line * 2); // 2 lines
-    // int src_pf_degree = src_pf_distance;        // (src_pf_distance*8) doubles as 8 doubles per line
-
     for (int i = 0; i < size; i++)
     {
         for (int j = 0; j < size; j++)
@@ -126,8 +122,7 @@ void tiledPrefetchedMatrixTranspose(double *matrix, double *transpose, int size,
                     _mm_prefetch((char *)&matrix[i * size + (j + 16)], _MM_HINT_T0);
                     _mm_prefetch((char *)&matrix[i * size + (j + 24)], _MM_HINT_T0);
                     _mm_prefetch((char *)&matrix[i * size + (j + 32)], _MM_HINT_T0);
-                    // _mm_prefetch((char *)&matrix[i * size + (j + 40)], _MM_HINT_T0);
-
+      
                     // Column wise pre fetch
                     _mm_prefetch((char *)&transpose[((j + 14)) * size + i], _MM_HINT_T0);
 

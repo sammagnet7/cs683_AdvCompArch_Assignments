@@ -45,11 +45,11 @@
 <img title="a title" alt="Alt text" src="./plots/part1/tiling_speedup_20K_64.png">
 
 ### Description:
-We observe instructions increases but MPKI dropped when moving from naive to tiling due to elements are getting reused before being replaced.
+1. We observe instructions increases but MPKI dropped when moving from naive to tiling due to elements are getting reused before being replaced.
 
-As we increase tile size we observe a decrease in MPKI until it saturates
+2. As we increase tile size we observe a decrease in MPKI until it saturates. We found tile size 32 to be optimal as MPKI is minimum and speedup is maximum.
 
-we achieved around 2.6x speedup compared to naive. The speedup was contributed by the tiling technique.
+3. we achieved around 2.6x speedup compared to naive. The speedup was contributed by the tiling technique.
 
 
 ## 1B: Fetch it but with soft corner (software prefetching)
@@ -60,9 +60,11 @@ we achieved around 2.6x speedup compared to naive. The speedup was contributed b
 <img title="a title" alt="Alt text" src="./plots/part1/prefetch_speedup_20K.png">
 
 ### Description:
-We observe instructions increases and so does MPKI when moving from naive to software prefetching. This is due to extra prefetch instructions generated which misses in the L1-d cache.
+1. We observe instructions increases when moving from naive to software prefetching. This is due to extra prefetch instructions generated.
 
-we achieved around 1.45x speedup due to prefetching technique.
+2. MPKI also increases. This could be due to some prefetches are made which are outside the bounds of the input matrix.
+
+3. we achieved around 1.45x speedup due to prefetching technique. This is primarily due to prefetching columns lines in destination matrix.
 
 ## 1C: Tiling + Prefetching
 
@@ -72,11 +74,13 @@ we achieved around 1.45x speedup due to prefetching technique.
 <img title="a title" alt="Alt text" src="./plots/part1/tilingprefetch_speedup_20K_64.png">
 
 ### Description:
-We observe instructions increases but MPKI dropped when moving from naive to prefetch+tiling technique.
+1. We observe instructions increases when moving from naive to prefetch+tiling. This is expected as both tiling and prefetch techniques generated more instructions when considered in isolation.
 
-As we increase tile size we observe a decrease in MPKI until it saturates. For matrix sizes greater than 5000 MPKI is fairly constant when looking at each tile size.
+2. There is an observable drop in MPKI across matrix sizes and tile sizes when compared with naive method.
 
-we achieved around 2.8x speedup compared to naive. The speedup was contributed by combined effect of tiling and prefetching technique.
+3. As we increase tile size we observe a decrease in MPKI until it saturates. From matrix size 5000, MPKI is fairly constant when looking at each tile size.
+
+4. we achieved around 2.8x speedup compared to naive. The speedup was contributed by combined effect of tiling and prefetching technique.
 
 ## All techniques together:
 
@@ -100,9 +104,9 @@ We can see tiling+prefetch technique gives the best speedup.
 <img title="a title" alt="Alt text" src="./plots/part2/simd_speedup_10K_16.png">
 
 ### Description:
-As we move to SIMD we see instructions increases
+1. As we move to SIMD we see instructions increases. We inspected the assembly and observed multiple vmovapd instructions being generated for loading the 256 bit ymm0 register.
 
-We achieved 2x speedup using simd technique. Speedup is due to vectorised operations.
+2. We achieved 2x speedup using simd technique. Speedup is due to vectorised operations.
 
 ## 2B: Tile it again
 
@@ -115,8 +119,11 @@ We achieved 2x speedup using simd technique. Speedup is due to vectorised operat
 <img title="a title" alt="Alt text" src="./plots/part2/tiling_speedup_10K_16.png">
 
 ### Description:
-As we increase kernel size from 8 to 16 MPKI drops. Matrix size has measurable effect.
+1. We observe no change in MPKI for when applying tiled 2D convolution. Since in naive approach the access pattern is not evicting lines that contains useful data before they are used.
 
+2. As we increase kernel size from 8 to 16 MPKI drops. Matrix size has no measurable effect.
+
+3. We didn't achieve any speedup due to tiling as in the naive approach the input matrix is accessed row wise and kernel itself have a tiling effect on the input matrix.
 ## 2C: Software Prefetching
 
 ### Plots:
@@ -128,11 +135,19 @@ As we increase kernel size from 8 to 16 MPKI drops. Matrix size has measurable e
 <img title="a title" alt="Alt text" src="./plots/part2/prefetch_speedup_10K_16.png">
 
 ### Description:
+1. We see an increase in number of instruction when applying software prefetching as prefetch instructions are now introduced.
+
+2. For a particular kernel size we see similar L1D-MPKI, but decreases slightly when kernel size is increased to 16.
+
+3. We didnot achieve speedup using software prefetching technique. Multiple prefetch degree and distance were tried but we weren't able to find the sweet spot.
 
 ## 2D: Hum saath saath hain 
+### Table
+<img title="a title" alt="Alt text" src="./plots/part2/matrix_convolution_table.png">
+
 
 ### Plots:
-#### simd-prefecth
+#### simd-prefetch
 <img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_8.png">
 <img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_inst_10K_16.png">
 <img title="a title" alt="Alt text" src="./plots/part2/simd-prefetch_mpki_10K_8.png">
@@ -168,14 +183,14 @@ As we increase kernel size from 8 to 16 MPKI drops. Matrix size has measurable e
 <img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_8.png">
 <img title="a title" alt="Alt text" src="./plots/part2/tiling-simd-prefetch_speedup_10K_16.png">
 
-### Description:
-
 ## All techniques together:
-In this we observe simd techniques gives the best speedup. Other techniques doesnt work as the source is accessed row wise.
+
 ### Plots:
 <img title="a title" alt="Alt text" src="./plots/part2/part2_all_techniques.png">
 
 ### Description:
 
-
+In this we observe simd techniques gives the best speedup. Other techniques doesnt work due to the reasons discussed above.
  
+ ### Conclusion:
+ For most of the assignment codes, we observed different results on different machines. Thus to reason about such behaviour it is crucial to know how exactly the underlying hardware is working. Especially for software prefetching in convolution, why it did not work at all is still a gray area for us.
