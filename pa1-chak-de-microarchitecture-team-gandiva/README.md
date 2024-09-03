@@ -36,7 +36,74 @@
  * Matrix sizes: [1000,3000,5000,10000,15000,20000]
  * Averaged over 5 rounds each
 
-# Part 1:
+# Task 1 (Matrix transpose)
+
+## 1A: Tile it to see it
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+
+## 1B: Fetch it but with soft corner (software prefetching)
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## 1C: Tiling + Prefetching
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## All techniques together:
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+
+
+# Task 2 (2D convolution)
+
+## 2A: Shhh SIMD in action
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## 2B: Tile it again
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## 2C: Software Prefetching
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## 2D: Hum saath saath hain 
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
+
+## All techniques together:
+
+### Plots:
+<img title="a title" alt="Alt text" src="./plots/part1/tiling_inst_20K_64.png">
+
+### Description:
 
 
  
