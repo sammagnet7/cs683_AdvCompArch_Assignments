@@ -12,6 +12,7 @@
 ## **System Details**
 - **Processor:** Intel(R) Core(TM) i7-14650HX
 - **Hyperthreading:** Turned off (Script: `{workspace}/scripts/hyper_thread_toggle.sh`)
+- **Switch of Hardware prefetch:** `sudo modprobe msr ; wrmsr -a 0x1a4 $(( 2**0 | 2**1 | 2**2 | 2**3)) ; rdmsr -a -c 0x1A4`
 - **CPU Frequency:** 5.2 GHz
 - **Cache:**
   - **L1 D Cache:** 48 KB
