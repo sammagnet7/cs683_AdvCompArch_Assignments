@@ -88,41 +88,12 @@ void prefetchMatrixTranspose(double *matrix, double *transpose, int size)
 
     for (int i = 0; i < size; i++)
     {
-        for (int j = 0; j < size; j += 8)
+        for (int j = 0; j < size; j++)
         {
-            _mm_prefetch((char *)&matrix[i * size + (j + 8)], _MM_HINT_T0);
-
+            _mm_prefetch((char *)&matrix[i * size + (j + 16)], _MM_HINT_T0);
             _mm_prefetch((char *)&transpose[(j + 8) * size + i], _MM_HINT_T0);
 
-            if (j + 7 < size)
-            {
-                transpose[j * size + i] = matrix[i * size + j];
-                transpose[(j + 1) * size + i] = matrix[i * size + (j + 1)];
-                transpose[(j + 2) * size + i] = matrix[i * size + (j + 2)];
-                transpose[(j + 3) * size + i] = matrix[i * size + (j + 3)];
-                transpose[(j + 4) * size + i] = matrix[i * size + (j + 4)];
-                transpose[(j + 5) * size + i] = matrix[i * size + (j + 5)];
-                transpose[(j + 6) * size + i] = matrix[i * size + (j + 6)];
-                transpose[(j + 7) * size + i] = matrix[i * size + (j + 7)];
-            }
-            else
-            {
-                transpose[j * size + i] = matrix[i * size + j];
-                if (j + 1 < size)
-                    transpose[(j + 1) * size + i] = matrix[i * size + (j + 1)];
-                if (j + 2 < size)
-                    transpose[(j + 2) * size + i] = matrix[i * size + (j + 2)];
-                if (j + 3 < size)
-                    transpose[(j + 3) * size + i] = matrix[i * size + (j + 3)];
-                if (j + 4 < size)
-                    transpose[(j + 4) * size + i] = matrix[i * size + (j + 4)];
-                if (j + 5 < size)
-                    transpose[(j + 5) * size + i] = matrix[i * size + (j + 5)];
-                if (j + 6 < size)
-                    transpose[(j + 6) * size + i] = matrix[i * size + (j + 6)];
-                if (j + 7 < size)
-                    transpose[(j + 7) * size + i] = matrix[i * size + (j + 7)];
-            }
+            transpose[j * size + i] = matrix[i * size + j];
         }
     }
 }
