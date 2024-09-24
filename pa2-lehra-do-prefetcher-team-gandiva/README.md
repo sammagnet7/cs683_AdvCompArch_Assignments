@@ -26,7 +26,7 @@ In case you need to modify the L2C/LLC prefetchers, you can manually change it i
 **Single-core simulation**
 ```
 ./[BINARY] -warmup_instructions [N_WARM] -simulation_instructions [N_SIM] [TRACE_DIR]/[TRACE]
-$ ./ip_stride-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 ../traces/trace1.champsimtrace.xz
+$ ./ip_stride-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../traces/trace1.champsimtrace.xz
 
 ${BINARY}: ChampSim binary compiled by "build_champsim.sh" (ip_stride-asp-1core)
 ${N_WARM}: number of instructions for warmup (25 million)
