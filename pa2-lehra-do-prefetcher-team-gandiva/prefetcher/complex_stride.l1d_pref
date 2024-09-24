@@ -34,7 +34,7 @@ IP_TABLE trackers_cplx[NUM_CPUS][NUM_IP_TABLE_ENTRIES];
 // ------------------------- Updating the signature ---------------------------- // 
 uint16_t update_sig_l1(uint16_t old_sig, int delta) {                           
     
-    return new_sig;
+    return old_sig;
 }
 
 // ------------------- Updating confidence for the CPLX class ------------------ // 
@@ -57,7 +57,7 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
 
 	// --------------------- Add Complex-Stride pf_address logic here --------------------- // 
 
-	prefetch_line(ip, addr, pf_address, FILL_L1, 0);
+	// prefetch_line(ip, addr, pf_address, FILL_L1, 0);
 
 	return;
 

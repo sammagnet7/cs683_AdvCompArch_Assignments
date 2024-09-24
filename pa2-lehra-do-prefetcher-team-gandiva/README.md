@@ -8,17 +8,6 @@
 - Ubuntu 18.04.6 LTS and above
 - Linux Kernel 5.4.0 and above
 - GCC 7.5.0
-  
-# Add your own data prefetchers and TLB prefetcher
-
-**Copy the respective template**
-```
-$ cp prefetcher/asp.cc prefetcher/asp.stlb_pref
-$ cp prefetcher/ip_stride.cc prefetcher/ip_stride.l1d_pref
-$ cp prefetcher/complex_stride.cc prefetcher/complex_stride.l1d_pref
-$ cp prefetcher/next_line.cc prefetcher/next_line.l1d_pref
-$ cp prefetcher/optimized.cc prefetcher/optimized.l1d_pref
-```
 
 # Compile
 
@@ -52,19 +41,19 @@ ChampSim measures the IPC (Instruction Per Cycle) value as a performance metric.
 There are some other useful metrics printed out at the end of simulation. <be>
 
 
-## Steps to download gc version 7 in ubuntu:
-1. Sudo apt update
-2. sudo add-apt-repository Ra.buntu-t@olchain-g/test
-3. vim /etc/apt/sources list
-4. sude nano /etc/apt/sources list
-5. Update the last line with deb (arch=amd64] http://archive.ubuntu.com/ubuntu focal main universe
+## Steps to download gcc version 7 in ubuntu:
+1. sudo apt update
+2. sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+3. vim /etc/apt/sources.list
+4. sudo nano /etc/apt/sources.list
+5. Update the last line with deb [arch=amd64] http://archive.ubuntu.com/ubuntu focal main universe
 6. sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 7. sudo apt-get install gcc-7
 8. sudo apt-get install g++-7
 9. sudo update-alternatives -install /usr/bin/g++ g++ /usr/bin/g++-7 0
-10. sudo update-alternatives -install /us/bin/gce gc /ust/bin/gcc-7 0
+10. sudo update-alternatives -install /us/bin/gcc gcc /ust/bin/gcc-7 0
     
---In case the GCC and G++ is already present in /us/bin(run /gcc-7 -v in /us/bin) installed and alternative is set then run
+--In case the GCC and G++ is already present in /usr/bin (run ./gcc-7 -v in /usr/bin), install the alternative and set it using
 
-1. sudo update-alternatives -config g++
+1. sudo update-alternatives --config g++
 2. sudo update-alternatives --config gcc
