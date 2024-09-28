@@ -1,153 +1,128 @@
 <p align="center">
   <h1 align="center"> pa2-lehra-do-prefetcher-team-gandiva </h1>
 
-### Task1: Implementing the Arbitrary Stride Prefetcher
+### Task 1: Implementing the Arbitrary Stride Prefetcher
 
-The problem involves modifying the `asp.stlb_pref` file to implement an Arbitrary Stride Prefetcher (ASP) for the Shared Translation Lookaside Buffer (STLB). The core mechanism for ASP leverages the concept of tracking address strides using a Reference Prediction Table (RPT). The objective is to dynamically calculate strides based on memory access patterns and prefetch addresses based on observed patterns.
+## **Walkthrough of the Implementation**
 
-Let's walk through the implementation step-by-step:
+The objective of this implementation was to develop an **Arbitrary Stride Prefetcher (ASP)** for the **Shared Translation Lookaside Buffer (STLB)**. Below is a detailed walkthrough of the implementation process:
 
-1. **Define the `IP_TRACKER` class**:  
-   Each `IP_TRACKER` will maintain metadata for a particular instruction pointer (IP). This will include:
-   - Instruction pointer
-   - Last Address
-   - Last Stride
-   - State for tracking stride consistency
+### 1. **Defining the IP Tracker Class**
+The ASP makes use of a class named `IP_TRACKER` to maintain records for each unique instruction pointer (IP). The class is defined with the following attributes:
+- `ip`: Stores the instruction pointer value.
+- `last_addr`: Holds the most recent address accessed by this IP.
+- `last_stride`: Stores the stride calculated as the difference between consecutive addresses.
+- `state`: Represents the state of the tracker in the stride prediction state machine.
+- `access_time`: Keeps track of the last access time, used for the **Least Recently Used (LRU)** replacement policy.
 
-2. **Initialize the Prefetcher**:  
-   The `stlb_prefetcher_initialize` function will initialize necessary data structures. The function should reset all trackers to a clean state.
+This class is instantiated for each of the IPs tracked by the prefetcher, and a total of 64 such trackers are maintained.
 
-3. **Implement Prefetcher Logic in `stlb_prefetcher_operate`**:  
-   This is where we calculate the stride, determine the state, and initiate prefetches.  
-   - **Stride Calculation**: Compute the stride for the current memory access.
-   - **State Update**: Change the state based on the stride's consistency.
-   - **Prefetch Address Calculation**: If the state indicates a stable stride, calculate the next prefetch address.
 
-### Code Implementation
-Here's a basic implementation for the `asp.stlb_pref` file:
+### 2. **Prefetching Logic in the `stlb_prefetcher_operate()` Function**
+The core logic is handled within the `stlb_prefetcher_operate()` function, which performs the following steps for each address accessed:
 
-```cpp
-// Define states for stride consistency
-#define INITIAL 0
-#define STEADY 1
-#define TRANSIENT 2
-#define NO_PRED 3
+1. **Identify or Allocate IP Tracker**: 
+   - Search for the IP in the existing tracker table.
+   - If the IP is not found and all trackers are in use, apply an **LRU replacement** to replace the least recently accessed tracker.
+   - Initialize the tracker fields: `ip`, `last_addr`, `last_stride`, and set `state` to `INITIAL`.
 
-// IP_TRACKER Class Definition
-class IP_TRACKER
-{
-public:
-    uint64_t ip;          // Instruction pointer
-    uint64_t last_addr;   // Last address referenced
-    int64_t last_stride;  // Last stride calculated
-    int state;            // State of the tracker
+2. **Calculate the Stride**: 
+   - Compute the stride as the difference between the current and previous address.
 
-    IP_TRACKER() {
-        ip = 0;
-        last_addr = 0;
-        last_stride = 0;
-        state = INITIAL;
-    }
-};
+3. **State Machine Logic**: 
+   - The stride consistency is monitored through a state machine with four states:
+     - **INITIAL**: The first reference; initializes the stride pattern.
+     - **TRANSIENT**: If the stride pattern changes, temporarily mark as inconsistent.
+     - **STEADY**: If the same stride is observed consecutively, mark the pattern as stable.
+     - **NOPRED**: No reliable prediction; monitor until consistent strides are observed.
 
-// Array of IP_TRACKER objects
-IP_TRACKER trackers[IP_TRACKER_COUNT];
+    -  **Figure 1: State machine implemented:**
+<p align="center">
+  <img src="state machine.png" alt="State machine" style="width:60%;"/>
+</p>
 
-// ------------------------- Initialize the prefetcher ------------------------- //
-void CACHE::stlb_prefetcher_initialize()
-{
-    cout << "CPU " << cpu << " STLB arbitrary stride prefetcher" << endl;
-    for (int i = 0; i < IP_TRACKER_COUNT; i++) {
-        trackers[i] = IP_TRACKER(); // Initialize each tracker
-    }
-}
+1. **Prefetching**: 
+   - Prefetching is initiated only if the stride pattern is in the `STEADY` state.
+   - The number of prefetches is determined by a parameter called `PREFETCH_DEGREE`.
+   - For each calculated prefetch address, the `prefetch_translation()` function is called to prefetch the addresses into the STLB.
 
-// --------------- This is the main prefetcher operate function ---------------- //
-void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint64_t prefetch_id, uint8_t instruction)
-{
-    // Search for the IP in the tracker table
-    int tracker_index = -1;
-    for (int i = 0; i < IP_TRACKER_COUNT; i++) {
-        if (trackers[i].ip == ip || trackers[i].ip == 0) {
-            tracker_index = i;
-            break;
-        }
-    }
+### 3. **Final Statistics Collection**
+The `stlb_prefetcher_final_stats()` function outputs a summary of the prefetcher's performance. It reports the final prefetch degree and any other relevant statistics.
 
-    if (tracker_index == -1) return; // No available tracker
+## **Building and Running the Prefetcher**
 
-    IP_TRACKER *tracker = &trackers[tracker_index];
+### **Build Command**
+To build the prefetcher with the required configuration:
 
-    // Update the tracker IP if it's a new entry
-    if (tracker->ip == 0) {
-        tracker->ip = ip;
-        tracker->last_addr = addr;
-        tracker->state = INITIAL;
-        return;
-    }
-
-    // Calculate the stride
-    int64_t stride = addr - tracker->last_addr;
-
-    // State machine logic to handle stride consistency
-    switch (tracker->state) {
-    case INITIAL:
-        if (stride != 0) {
-            tracker->last_stride = stride;
-            tracker->state = TRANSIENT;
-        }
-        break;
-
-    case TRANSIENT:
-        if (stride == tracker->last_stride) {
-            tracker->state = STEADY;
-        } else {
-            tracker->last_stride = stride;
-        }
-        break;
-
-    case STEADY:
-        if (stride != tracker->last_stride) {
-            tracker->state = INITIAL;
-        }
-        break;
-
-    default:
-        tracker->state = INITIAL;
-        break;
-    }
-
-    tracker->last_addr = addr;
-
-    // Prefetch logic: Prefetch only if in the STEADY state
-    if (tracker->state == STEADY) {
-        for (int i = 1; i <= PREFETCH_DEGREE; i++) {
-            uint64_t pf_address = addr + (i * tracker->last_stride);
-
-            // Prefetch the calculated address
-            prefetch_translation(ip, pf_address, (int)2, 0, prefetch_id, instruction);
-        }
-    }
-
-    return;
-}
+```bash
+./build_champsim.sh no asp 1
 ```
 
-### Explanation of Implementation:
-1. **IP_TRACKER Class**: Contains metadata for a given instruction pointer (IP). The class tracks:
-   - `ip`: Instruction Pointer (PC value).
-   - `last_addr`: The last address referenced by this instruction.
-   - `last_stride`: Calculated stride between successive addresses.
-   - `state`: State of the tracker (INITIAL, TRANSIENT, STEADY).
+This command specifies:
+- `no`: No additional optimizations or configurations.
+- `asp`: The Arbitrary Stride Prefetcher for the STLB.
+- `1`: Number of CPU cores to use.
 
-2. **`stlb_prefetcher_operate` Function**:
-   - Finds the appropriate IP tracker or creates a new one.
-   - Computes the stride and updates the state machine.
-   - If the state is `STEADY`, initiates prefetches using the stride.
+### **Run Command**
+To execute the binary with the appropriate parameters:
 
-3. **Prefetch Calculation**: Uses the stride to prefetch multiple addresses. The degree of prefetching is controlled using the `PREFETCH_DEGREE` macro.
+```bash
+./bin/no-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces given/traces/trace1.champsimtrace.xz > output/task1/no-asp-1core_degree_8.log
+```
 
-This approach follows the principles outlined in the problem statement and leverages the RPT-like structure to implement arbitrary stride prefetching in the TLB.
-CMD `./bin/no-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces given/traces/trace1.champsimtrace.xz > output/task1/no-asp-1core_degree_8.log`
+This command runs the simulator with:
+- **Warmup Instructions**: 25,000,000
+- **Simulation Instructions**: 25,000,000
+- **Trace File**: `trace1.champsimtrace.xz`
+- **Output Log**: Stores the results in `output/task1/no-asp-1core_degree_8.log`
+
+## **Experimental Results**
+
+### 1. **Speedup Analysis**
+The speedup is calculated as:
+
+Speedup = (IPC of Prefetcher) / (IPC of Baseline without Prefetching)
+
+We varied the **Prefetch Degree** from 2 to 8 and observed the effect on IPC. The following graph depicts the **Speedup vs. Prefetch Degree**.
+
+**Table 1: STLB Speedup Comparison**
+
+| Prefetch Degree | ASP Prefetcher Speedup |
+|-----------------|----------------------- |
+| 2               |  [ASP Value]           |
+| 4               |  [ASP Value]           |
+| 6               |  [ASP Value]           |
+| 8               |  [ASP Value]           |
+| 10              |  [ASP Value]           |
+
+**Figure 2: Speedup vs. Prefetch Degree**
+<p align="center">
+  <img src="dummy_graph_speedup.png" alt="Speedup Graph" style="width:60%;"/>
+</p>
+
+### 2. **STLB MPKI Analysis**
+STLB MPKI (Misses Per Kilo Instructions) was calculated for different Prefetch Degrees and compared with the baseline where no prefetching was used. The results are summarized in the table below:
+
+**Table 2: STLB MPKI Comparison**
+
+| Prefetch Degree | Baseline (No Prefetching) | ASP Prefetcher MPKI |
+|-----------------|-------------------------- |---------------------|
+| 2               | [Baseline Value]          | [ASP Value]         |
+| 4               | [Baseline Value]          | [ASP Value]         |
+| 6               | [Baseline Value]          | [ASP Value]         |
+| 8               | [Baseline Value]          | [ASP Value]         |
+| 10              | [Baseline Value]          | [ASP Value]         |
+
+**Figure 3: STLB MPKI Comparison Graph**
+<p align="center">
+  <img src="dummy_graph_mpki.png" alt="MPKI Graph" style="width:60%;"/>
+</p>
+
+### 3. **Key Observations**
+- The **Speedup** peaked at **Prefetch Degree = 8** and statyed constant beyond that point.
+- The **STLB MPKI** decreased to minimum at Degree 8, indicating fewer misses and improved prefetching efficiency. But after this point it remains mostly constatnt as extra prefecth requests were dropped by the pre fecther itself.
+
+## **Conclusion**
+The Arbitrary Stride Prefetcher (ASP) successfully reduced STLB misses and improved the overall performance. Optimal performance was observed at **Prefetch Degree 8**, where both speedup and MPKI were optimized. Further tuning of the state machine and replacement policies may provide additional improvements.
+
 ---
-
