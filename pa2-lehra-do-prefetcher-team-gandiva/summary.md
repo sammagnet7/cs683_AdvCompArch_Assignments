@@ -148,6 +148,6 @@ void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hi
 3. **Prefetch Calculation**: Uses the stride to prefetch multiple addresses. The degree of prefetching is controlled using the `PREFETCH_DEGREE` macro.
 
 This approach follows the principles outlined in the problem statement and leverages the RPT-like structure to implement arbitrary stride prefetching in the TLB.
-
+CMD `./bin/no-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces given/traces/trace1.champsimtrace.xz > output/task1/no-asp-1core_degree_8.log`
 ---
 
