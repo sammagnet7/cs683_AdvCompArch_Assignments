@@ -96,7 +96,7 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip,
 	tracker->access_time = global_time;
 	// Calculate the stride
 	int64_t stride = cl_offset - tracker->last_cl_offset;
-	cout << "Stride: " << stride << "\n";
+
 	// don't do anything if same address is seen twice in a row
 	if (stride == 0) return;
 
