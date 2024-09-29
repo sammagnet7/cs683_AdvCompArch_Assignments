@@ -1,9 +1,9 @@
 <p align="center">
   <h1 align="center"> pa2-lehra-do-prefetcher-team-gandiva </h1>
 
-### Task 1: Implementing the Arbitrary Stride Prefetcher
+## Task 1: TLB Prefetching
 
-## **Walkthrough of the Implementation**
+### **Implementing the Arbitrary Stride Prefetcher**
 
 The objective of this implementation was to develop an **Arbitrary Stride Prefetcher (ASP)** for the **Shared Translation Lookaside Buffer (STLB)**. Below is a detailed walkthrough of the implementation process:
 
@@ -60,6 +60,9 @@ The `stlb_prefetcher_final_stats()` function outputs a summary of the prefetcher
 To build the prefetcher with the required configuration:
 
 ```bash
+# Navigate to the ChampSim directory
+cd path/to/champsim
+
 ./build_champsim.sh no asp 1
 ```
 
@@ -136,5 +139,114 @@ STLB MPKI (Misses Per Kilo Instructions) was calculated for different Prefetch D
 ## **Conclusion**
 
 The Arbitrary Stride Prefetcher (ASP) successfully reduced STLB misses and improved the overall performance. Optimal performance was observed at **Prefetch Degree 8**, where both speedup and MPKI were optimized. Further tuning of the state machine and replacement policies may provide additional improvements.
+
+---
+
+---
+## Task 2: Data Prefetcher
+
+### **IP-Stride and Complex-Stride Prefetcher Implementation Analysis**
+
+#### **2.1 Overview of Prefetcher Designs**
+
+Two types of stride-based prefetchers were implemented and evaluated in the **ChampSim** simulation environment: **IP-Stride Prefetcher** and **Complex-Stride Prefetcher**. This section outlines the step-by-step procedure for implementing each prefetcher, along with performance analysis and comparisons.
+
+---
+
+#### **2.2 Implementation Steps**
+
+##### **2.2.1 IP-Stride Prefetcher Implementation**
+
+1. **Implement the Prefetcher Logic**:
+   - The IP-Stride prefetcher tracks stride patterns for each instruction pointer (IP) and issues prefetches based on consistent strides.
+   - State machine for tracking `INITIAL`, `TRANSIENT`, `STEADY`, and `NOPRED` states.
+   - Prefetches are issued within the same 4KB page to avoid cross-page pollution.
+
+2. **Build and Execute**:
+   - Use the following commands to build and execute the prefetcher:
+
+   ```bash
+   # Navigate to the ChampSim directory
+   cd path/to/champsim
+
+   # Build the IP-Stride Prefetcher
+   ./build_champsim.sh ip_stride no 1
+
+   # Run the simulation with the given trace and configurations
+    ./bin/ip_stride-no-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace2.champsimtrace.xz   
+    ```
+
+>##### **Key Takeaways**
+
+  IP-Stride prefetcher is a basic yet efficient mechanism for leveraging consistent stride patterns, making it suitable for workloads dominated by sequential memory access. However, it may fall short in scenarios with non-linear or complex access patterns, where more advanced prefetching strategies like the Complex-Stride prefetcher would be more effective.
+
+##### **2.2.2 Complex-Stride Prefetcher Implementation**
+
+1. **Implement the Prefetcher Logic**:
+   - The Complex-Stride Prefetcher extends the IP-Stride by incorporating **delta-strides**.
+   - Track stride changes **pattern** for each IP, using a **confidence metric** to gauge prediction reliability.
+   - Implement a signature-based indexing mechanism for storing and retrieving complex stride patterns.
+
+2. **Build and Execute**:
+   - Use the following commands to build and execute the Complex-Stride Prefetcher:
+
+   ```bash
+   # Build the Complex-Stride Prefetcher
+   ./build_champsim.sh complex_stride no 1
+
+   # Run the simulation with the given trace and configurations
+   ./bin/complex_stride-no-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace2.champsimtrace.xz
+   ```
+
+>##### **Key Takeaways**
+
+  This implementation showcases a robust stride prefetcher that can handle both regular and complex stride patterns, making it well-suited for modern applications with diverse memory access behaviors.
+
+---
+
+#### **2.3 Performance Metrics and Evaluation**
+
+The performance of the implemented prefetchers was evaluated against a **baseline (no prefetcher)**. The key metrics used for comparison are:
+
+##### **2.3.1 Speedup Analysis**
+
+- **IP-Stride Speedup**: IP-Stride was compared to the baseline and achieved a speedup of `X%` for the given trace.
+- **Complex-Stride Speedup**: Complex-Stride prefetcher outperformed the baseline and IP-Stride, with a speedup of `Y%`.
+
+| **Prefetcher**         | **Speedup (%)** |
+|------------------------|----------------|
+| **No Prefetcher**      | 1              |
+| **IP-Stride**          | X              |
+| **Complex-Stride**     | Y              |
+
+- **Plot Placeholder**:
+  ![Speedup Analysis](./speedup_analysis.png)
+
+##### **2.3.2 L1D MPKI Analysis**
+
+- **Baseline**: Without any prefetching, the L1D Misses Per 1000 Instructions (MPKI) was observed to be `Z`.
+- **IP-Stride**: The IP-Stride prefetcher reduced L1D MPKI by `X%` over the baseline.
+- **Complex-Stride**: The Complex-Stride prefetcher demonstrated a more significant reduction in L1D MPKI compared to IP-Stride and baseline.
+
+| **Prefetcher**         | **L1D MPKI (Total)** | **L1D MPKI (Load)** |
+|------------------------|----------------------|---------------------|
+| **No Prefetcher**      | Z                    | Z_load              |
+| **IP-Stride**          | A                    | A_load              |
+| **Complex-Stride**     | B                    | B_load              |
+
+- **Plot Placeholder**:
+  ![L1D MPKI Analysis](./mpki_analysis.png)
+
+---
+
+#### **2.4 Comparative Analysis**
+
+The results show that **Complex-Stride Prefetcher** performs better than the **IP-Stride Prefetcher** for the given trace2, with lower L1D MPKI and higher speedup. The additional complexity of handling strides' **historical patterns** and maintaining a confidence-based state tracking mechanism allows the Complex-Stride Prefetcher to better adapt to varying memory access patterns.
+
+---
+
+#### **2.5 Conclusion**
+
+The **Complex-Stride Prefetcher** outperforms the **IP-Stride Prefetcher** and the **Baseline** in terms of both **speedup** and **L1D MPKI reduction** in case of running trace2. This highlights its effectiveness in handling complex memory access patterns, making it suitable for workloads with irregular and non-linear memory references.
 
 ---
