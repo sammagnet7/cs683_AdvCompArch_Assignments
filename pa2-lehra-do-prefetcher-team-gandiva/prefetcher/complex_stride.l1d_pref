@@ -108,7 +108,7 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip,
     return;
 
   int64_t stride = cl_offset - entry->last_cl_offset;
-
+  cout << "stride: " << stride << "\n";
   // don't do anything if same address is seen twice in a row
   if (stride == 0) return;
 
