@@ -7,7 +7,7 @@ Number of CPUs: 1
 LLC sets: 2048
 LLC ways: 16
 Off-chip DRAM Size: 4096 MB Channels: 1 Width: 64-bit Data Rate: 6400 MT/s
-CPU 0 runs ../given/traces/trace1.champsimtrace.xz
+CPU 0 runs given/traces/trace1.champsimtrace.xz
 .xz
 CPU 0 Bimodal branch predictor
 BTB has LRU replacement policy
@@ -18,15 +18,15 @@ L1I has LRU replacement policy
 L1D has LRU replacement policy
 L2C has LRU replacement policy
 LLC has LRU replacement policy
-Heartbeat CPU 0 instructions: 10000003 cycles: 2830061 heartbeat IPC: 3.53349 cumulative IPC: 3.53349 (Simulation time: 0 hr 0 min 48 sec) 
+Heartbeat CPU 0 instructions: 10000003 cycles: 2830061 heartbeat IPC: 3.53349 cumulative IPC: 3.53349 (Simulation time: 0 hr 0 min 49 sec) 
 Heartbeat CPU 0 instructions: 20000003 cycles: 5650207 heartbeat IPC: 3.54592 cumulative IPC: 3.53969 (Simulation time: 0 hr 1 min 36 sec) 
 
-Warmup complete CPU 0 instructions: 25000004 cycles: 7064357 (Simulation time: 0 hr 2 min 2 sec) 
+Warmup complete CPU 0 instructions: 25000004 cycles: 7064357 (Simulation time: 0 hr 2 min 1 sec) 
 
-Heartbeat CPU 0 instructions: 30000002 cycles: 23982403 heartbeat IPC: 0.545488 cumulative IPC: 0.295542 (Simulation time: 0 hr 2 min 58 sec) 
+Heartbeat CPU 0 instructions: 30000002 cycles: 23982403 heartbeat IPC: 0.545488 cumulative IPC: 0.295542 (Simulation time: 0 hr 2 min 57 sec) 
 Heartbeat CPU 0 instructions: 40000001 cycles: 60314226 heartbeat IPC: 0.275241 cumulative IPC: 0.281691 (Simulation time: 0 hr 4 min 54 sec) 
-Heartbeat CPU 0 instructions: 50000000 cycles: 95466438 heartbeat IPC: 0.284477 cumulative IPC: 0.282799 (Simulation time: 0 hr 6 min 51 sec) 
-Finished CPU 0 instructions: 25000000 cycles: 88402083 cumulative IPC: 0.282799 (Simulation time: 0 hr 6 min 51 sec) 
+Heartbeat CPU 0 instructions: 50000000 cycles: 95466438 heartbeat IPC: 0.284477 cumulative IPC: 0.282799 (Simulation time: 0 hr 6 min 49 sec) 
+Finished CPU 0 instructions: 25000000 cycles: 88402083 cumulative IPC: 0.282799 (Simulation time: 0 hr 6 min 49 sec) 
 
 ChampSim completed all CPUs
 

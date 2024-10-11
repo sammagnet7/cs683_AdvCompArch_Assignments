@@ -4,7 +4,7 @@
 #define IP_TRACKER_COUNT 64 // Number of IP trackers
 // ------------------------- DO NOT CHANGE -------------------------------- //
 
-#define PREFETCH_DEGREE 8 // Prefetch degree - you need to vary this!
+#define PREFETCH_DEGREE 8// Prefetch degree - you need to vary this!
 
 // Define states for stride consistency
 #define INITIAL 0
@@ -13,7 +13,7 @@
 #define NOPRED 3
 
 // Global counter to keep track of the current time
-uint64_t global_time = 0;
+uint64_t asp_global_time = 0;
 
 class IP_TRACKER
 {
@@ -35,24 +35,24 @@ public:
 	}
 };
 
-IP_TRACKER trackers[IP_TRACKER_COUNT];
+IP_TRACKER asp_trackers[IP_TRACKER_COUNT];
 
 // ------------------------- Initialize the prefetcher ------------------------- //
 void CACHE::stlb_prefetcher_initialize()
 {
 	cout << "CPU " << cpu << " STLB arbitrary stride prefetcher" << endl;
 
-	global_time = 0; // Reset global time counter
+	asp_global_time = 0; // Reset global time counter
 }
 
 // --------------- This is the main prefetcher operate function ---------------- //
 void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint64_t prefetch_id, uint8_t instruction)
 {
 	// ------------------------ Add Arbitrary Stride pf_address logic here ----------------------- //
-	global_time++; // Increment the global time on each access
-	if (global_time == UINT64_MAX)
+	asp_global_time++; // Increment the global time on each access
+	if (asp_global_time == UINT64_MAX)
 	{
-		global_time = 0;
+		asp_global_time = 0;
 	}
 
 	// Search for the IP in the tracker table
@@ -60,7 +60,7 @@ void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hi
 
 	for (int i = 0; i < IP_TRACKER_COUNT; i++)
 	{
-		if (trackers[i].ip == ip)
+		if (asp_trackers[i].ip == ip)
 		{
 			tracker_index = i;
 			break;
@@ -74,26 +74,26 @@ void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hi
 		uint64_t min_time = UINT64_MAX;
 		for (int i = 0; i < IP_TRACKER_COUNT; i++)
 		{
-			if (trackers[i].access_time < min_time)
+			if (asp_trackers[i].access_time < min_time)
 			{
-				min_time = trackers[i].access_time;
+				min_time = asp_trackers[i].access_time;
 				tracker_index = i;
 			}
 		}
 
 		// Initialize the new tracker with current IP
-		trackers[tracker_index].ip = ip;
-		trackers[tracker_index].last_addr = addr;
-		trackers[tracker_index].last_stride = 0;
-		trackers[tracker_index].state = INITIAL;
-		trackers[tracker_index].access_time = global_time;
+		asp_trackers[tracker_index].ip = ip;
+		asp_trackers[tracker_index].last_addr = addr;
+		asp_trackers[tracker_index].last_stride = 0;
+		asp_trackers[tracker_index].state = INITIAL;
+		asp_trackers[tracker_index].access_time = asp_global_time;
 
 		return;
 	}
 
-	IP_TRACKER *tracker = &trackers[tracker_index];
+	IP_TRACKER *tracker = &asp_trackers[tracker_index];
 	// Update the access time for LRU tracking
-	tracker->access_time = global_time;
+	tracker->access_time = asp_global_time;
 	// Calculate the stride
 	int64_t stride = addr - tracker->last_addr;
 	// State machine logic to handle stride consistency

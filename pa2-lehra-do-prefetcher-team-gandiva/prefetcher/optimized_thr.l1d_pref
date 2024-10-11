@@ -354,12 +354,12 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             if (tracker->state == STEADY)
             {
                 int pref_offset = 0;
-                for (int i = 1; i <= PREFETCH_DEGREE; i++)
+                for (int i = 1; i <= thr_pf_degree; i++)
                 {
                     pref_offset += tracker->last_stride; // strides get added in
                     // subsequent prefetchs
 
-                    uint64_t pf_address = (cl_addr + pref_offset) << LOG2_BLOCK_SIZE;
+                    uint64_t pf_address = (cl_addr + thr_pf_distance * pref_offset) << LOG2_BLOCK_SIZE;
 
                     // only issue a prefetch if the prefetch address is in the same 4 KB page
                     // as the current demand access address

@@ -119,6 +119,11 @@ class CACHE : public MEMORY {
     uint32_t reads_available_this_cycle;
     uint8_t cache_type;
 
+    // custom counters
+    uint64_t prefetcher_type, pf_ip_useful, pf_cplx_useful, pf_nl_useful;
+    // Throttling knobs
+    uint64_t thr_pf_degree, thr_pf_distance;
+
     // prefetch stats
     uint64_t pf_requested,
              pf_issued,
@@ -188,6 +193,10 @@ class CACHE : public MEMORY {
         : NAME(v1), NUM_SET(v2), NUM_WAY(v3), NUM_LINE(v4), WQ_SIZE(v5), RQ_SIZE(v6), PQ_SIZE(v7), MSHR_SIZE(v8) {
 
         LATENCY = 0;
+        prefetcher_type = 0;
+        pf_ip_useful = 0; 
+        pf_cplx_useful = 0;
+        pf_nl_useful = 0;
 
         // cache block
         block = new BLOCK* [NUM_SET];

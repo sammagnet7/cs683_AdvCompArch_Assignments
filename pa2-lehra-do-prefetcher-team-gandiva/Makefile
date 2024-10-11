@@ -8,7 +8,7 @@ inc = inc
 
 debug = 1
 
-CFlags = -Wall -g -std=c++11 -O3
+CFlags = -Wall -g -std=c++11 -O0
 LDFlags = -static
 libs =
 libDir =

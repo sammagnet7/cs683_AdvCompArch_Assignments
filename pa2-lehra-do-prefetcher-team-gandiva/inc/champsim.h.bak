@@ -47,7 +47,6 @@
 //#define PRINT_QUEUE_TRACE
 //#define QTRACE_INSTR_ID 5191
 
-
 #ifdef DEBUG_PRINT
 //#define DP(x) x //@Vishal: Use this to print only in simulation
 

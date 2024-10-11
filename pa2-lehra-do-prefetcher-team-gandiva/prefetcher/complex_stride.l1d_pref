@@ -35,7 +35,7 @@ public:
 };
 
 IP_TABLE trackers_cplx[NUM_CPUS][NUM_IP_TABLE_ENTRIES];
-PRED_TABLE CSPT[NUM_CPUS][4096];
+PRED_TABLE CSPT[NUM_CPUS][NUM_IP_TABLE_ENTRIES];
 
 // ------------------------- Updating the signature ----------------------------
 // //
@@ -46,7 +46,7 @@ uint16_t update_sig_l1(uint16_t old_sig, int delta_stride) {
 	// 7-bit sign magnitude form, since we need to track deltas from +63 to -63
 	sig_delta =
 	    (delta_stride < 0) ? (((-1) * delta_stride) + (1 << 6)) : delta_stride;
-	new_sig = ((old_sig << 1) ^ sig_delta) & 0xFFF;
+	new_sig = ((old_sig << 1) ^ sig_delta) & 0x3FF;
 
 	return new_sig;
 }
@@ -95,7 +95,6 @@ IP_TABLE *find_ip_entry(uint64_t ip, int cpu, uint64_t curr_page,
 void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip,
                                    uint8_t cache_hit, uint8_t type,
                                    uint8_t critical_ip_flag) {
-	cout << "Prefetcher operate\n";
 	uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE;  // Cache line address
 	uint64_t page_num = addr >> LOG2_PAGE_SIZE;  // 4KB page number
 	uint64_t cl_offset =
