@@ -422,6 +422,20 @@ void reset_cache_stats(uint32_t cpu, CACHE *cache)
 
     cache->total_miss_latency = 0;
 
+    // Custom counters reset
+    cache->thr_pf_sent = 0;
+    cache->thr_pf_sent_li = 0;
+    cache->thr_pf_useful = 0;
+    cache->thr_pf_useful_li = 0;
+    cache->thr_pf_late = 0;
+    cache->thr_pf_late_li = 0;
+    cache->thr_demand_miss_total = 0;
+    cache->thr_demand_miss_total_li = 0;
+    cache->thr_pf_pollution_total = 0;
+    cache->thr_pf_pollution_total_li = 0;
+    cache->thr_eviction_count = 0;
+    //----------------------------------------
+
     cache->RQ.ACCESS = 0;
     cache->RQ.MERGED = 0;
     cache->RQ.TO_CACHE = 0;
@@ -1420,7 +1434,6 @@ int main(int argc, char **argv)
     start_time = time(NULL);
     uint8_t run_simulation = 1;
     int cs_index = 0;
-    int64_t retire_attempted = 0;
     while (run_simulation)
     {
 
@@ -1437,10 +1450,6 @@ int main(int argc, char **argv)
         {
             // proceed one cycle
             current_core_cycle[i]++;
-            if(current_core_cycle[i] == 70000000){
-                cout << "Retire attempted: " << retire_attempted <<" Failed due to ip: " << ooo_cpu[i].return_due_to_ip << " Failed due to non completion: " << ooo_cpu[i].return_due_to_noncompletion << " Retired instructions: " << ooo_cpu[i].num_retired << endl;
-            }
-
             // Neelu: Capturing the phase-wise stats for dynamic energy.
 #ifdef CAPTURE_DYNAMIC_ENERGY_PROFILE
             if (warmup_complete[i] && current_core_cycle[i] % PHASE_SIZE_IN_CYCLES == 0)
@@ -1587,7 +1596,6 @@ int main(int argc, char **argv)
                 if (/*(ooo_cpu[i].ROB.entry[ooo_cpu[i].ROB.head].executed == COMPLETED) && */ (ooo_cpu[i].ROB.entry[ooo_cpu[i].ROB.head].event_cycle <= current_core_cycle[i]))
                 {
                     ooo_cpu[i].retire_rob();
-                    retire_attempted++;
                 }
                     
 

@@ -77,7 +77,7 @@ This command specifies:
 To execute the binary with the appropriate parameters:
 
 ```bash
-./bin/no-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces given/traces/trace1.champsimtrace.xz > output/task1/no-asp-1core_degree_8.log
+./bin/no-asp-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces given/traces/trace1.champsimtrace.xz > output/task1/no-asp-1core-degree-8.log
 ```
 
 This command runs the simulator with:
@@ -85,7 +85,7 @@ This command runs the simulator with:
 - **Warmup Instructions**: 25,000,000
 - **Simulation Instructions**: 25,000,000
 - **Trace File**: `trace1.champsimtrace.xz`
-- **Output Log**: Stores the results in `output/task1/no-asp-1core_degree_8.log`
+- **Output Log**: Stores the results in `output/task1/no-asp-1core-degree-8.log`
 
 ## **Experimental Results**
 
@@ -101,15 +101,15 @@ We varied the **Prefetch Degree** from 2 to 10 and observed the effect on IPC. T
 
 | Prefetch Degree | ASP Prefetcher Speedup |
 |-----------------|----------------------- |
-| 2               |  [ASP Value]           |
-| 4               |  [ASP Value]           |
-| 6               |  [ASP Value]           |
-| 8               |  [ASP Value]           |
-| 10              |  [ASP Value]           |
+| 2               |  1.001                 |
+| 4               |  1.009                 |
+| 6               |  1.013                 |
+| 8               |  1.018                 |
+| 10              |  1.018                 |
 
 **Figure 2: Speedup vs. Prefetch Degree**
 <p align="center">
-  <img src="dummy_graph_speedup.png" alt="Speedup Graph" style="width:60%;"/>
+  <img src="./graphs/task1-speedup.png" alt="Speedup Graph" style="width:60%;"/>
 </p>
 
 ### 2. **STLB MPKI Analysis**
@@ -120,21 +120,21 @@ STLB MPKI (Misses Per Kilo Instructions) was calculated for different Prefetch D
 
 | Prefetch Degree | Baseline (No Prefetching) | ASP Prefetcher MPKI |
 |-----------------|-------------------------- |---------------------|
-| 2               | [Baseline Value]          | [ASP Value]         |
-| 4               | [Baseline Value]          | [ASP Value]         |
-| 6               | [Baseline Value]          | [ASP Value]         |
-| 8               | [Baseline Value]          | [ASP Value]         |
-| 10              | [Baseline Value]          | [ASP Value]         |
+| 2               | 22.4811                   | 22.2884             |
+| 4               | 22.4811                   | 22.2556             |
+| 6               | 22.4811                   | 22.2476             |
+| 8               | 22.4811                   | 22.2491             |
+| 10              | 22.4811                   | 22.2491             |
 
 **Figure 3: STLB MPKI Comparison Graph**
 <p align="center">
-  <img src="dummy_graph_mpki.png" alt="MPKI Graph" style="width:60%;"/>
+  <img src="./graphs/task1-mpki.png" alt="MPKI Graph" style="width:60%;"/>
 </p>
 
 ### 3. **Key Observations**
 
 - The **Speedup** peaked at **Prefetch Degree = 8** and statyed constant beyond that point.
-- The **STLB MPKI** decreased to minimum at Degree 8, indicating fewer misses and improved prefetching efficiency. But after this point it remains mostly constatnt as extra prefecth requests were dropped by the pre fecther itself.
+- The **STLB MPKI** decreased to minimum at Degree 6, indicating fewer misses and improved prefetching efficiency. But after this point it remains mostly constatnt as extra prefecth requests were dropped by the pre fecther itself.
 
 ## **Conclusion**
 
@@ -210,32 +210,32 @@ The performance of the implemented prefetchers was evaluated against a **baselin
 
 ##### **2.3.1 Speedup Analysis**
 
-- **IP-Stride Speedup**: IP-Stride was compared to the baseline and achieved a speedup of `X%` for the given trace.
-- **Complex-Stride Speedup**: Complex-Stride prefetcher outperformed the baseline and IP-Stride, with a speedup of `Y%`.
+- **IP-Stride Speedup**: IP-Stride was compared to the baseline and achieved a speedup of `230.9%` for the given trace.
+- **Complex-Stride Speedup**: Complex-Stride prefetcher outperformed the baseline and IP-Stride, with a speedup of `269.5%`.
 
-| **Prefetcher**         | **Speedup (%)** |
-|------------------------|----------------|
-| **No Prefetcher**      | 1              |
-| **IP-Stride**          | X              |
-| **Complex-Stride**     | Y              |
+| **Prefetcher**         | **Speedup (normalized)** |
+|------------------------|--------------------------|
+| **No Prefetcher**      | 1                        |
+| **IP-Stride**          | 3.309                    |
+| **Complex-Stride**     | 3.695                    |
 
 - **Plot Placeholder**:
-  ![Speedup Analysis](./speedup_analysis.png)
+  ![Speedup Analysis](./graphs/task2-speedup.png)
 
 ##### **2.3.2 L1D MPKI Analysis**
 
-- **Baseline**: Without any prefetching, the L1D Misses Per 1000 Instructions (MPKI) was observed to be `Z`.
-- **IP-Stride**: The IP-Stride prefetcher reduced L1D MPKI by `X%` over the baseline.
-- **Complex-Stride**: The Complex-Stride prefetcher demonstrated a more significant reduction in L1D MPKI compared to IP-Stride and baseline.
+- **Baseline**: Without any prefetching, the L1D Load Misses Per 1000 Instructions (MPKI) was observed to be `69.9647`.
+- **IP-Stride**: The IP-Stride prefetcher reduced L1D MPKI by `30.9%` over the baseline.
+- **Complex-Stride**: The Complex-Stride prefetcher demonstrated a more significant reduction of `85.7%` in L1D MPKI compared to IP-Stride and baseline.
 
-| **Prefetcher**         | **L1D MPKI (Total)** | **L1D MPKI (Load)** |
+| **Prefetcher**         | **L1D MPKI (Load)** | **L1D MPKI (Total)** |
 |------------------------|----------------------|---------------------|
-| **No Prefetcher**      | Z                    | Z_load              |
-| **IP-Stride**          | A                    | A_load              |
-| **Complex-Stride**     | B                    | B_load              |
+| **No Prefetcher**      | 69.9647              | 69.9934             |
+| **IP-Stride**          | 16.067               | 70.7358             |
+| **Complex-Stride**     | 9.98436              | 72.0802             |
 
 - **Plot Placeholder**:
-  ![L1D MPKI Analysis](./mpki_analysis.png)
+  ![L1D MPKI Analysis](./graphs/task2-speedup.png)
 
 ---
 
@@ -286,14 +286,14 @@ The strategy involves:
 #### **2.1 `optimized.l1d_pref` Implementation**
 
 1. **PHASE_LENGTH Parameter**:
-   - Set the `PHASE_LENGTH` to a suitable value (e.g., 10,000 prefetches) to balance between learning and execution phases.
+   - Took a `PHASE_LENGTH` value of `10W000` load instructions to balance between learning and execution phases.
 
 2. **Prefetcher Classes**:
-   - Implement separate classes for each prefetcher (`IPStride`, `ComplexStride`, `NextLine`) with their respective prefetching logic.
-   - Track each prefetcher's hits and total prefetches during the learning phase.
+   - Implement separate counters for each prefetcher (`IPStride`, `ComplexStride`, `NextLine`) and a counter tracking demand misses
+   - Track each prefetcher's hits during the learning phase and calculate coverage after phase ends.
 
 3. **Prefetcher Selector**:
-   -`PrefetcherSelector` class to handle the learning phase, maintain statistics, and choose the best prefetcher based on observed accuracy.
+   - Adds a method `get_current_prefetcher` to `CACHE` class that handles the learning phase, switching prefetchers, and choose the best prefetcher based on observed coverage.
 
 
 ### **3. Build and Run Instructions**
@@ -307,7 +307,7 @@ To build and execute the hybrid prefetcher, follow these steps:
    cd path/to/champsim
 
    # Build the optimized prefetcher with Guldasta-e-Prefetcher
-   ./build_champsim.sh no optimized 1
+   ./build_champsim.sh optimized no 1
    ```
 
 2. **Run Command:**
@@ -315,11 +315,11 @@ To build and execute the hybrid prefetcher, follow these steps:
    ```bash
    # Run the binary with trace1, trace2, and trace3 for evaluation
 
-   ./bin/no-optimized-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace1.champsimtrace.xz
+   ./bin/optimized-no-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace1.champsimtrace.xz
 
-   ./bin/no-optimized-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace2.champsimtrace.xz
+   ./bin/optimized-no-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace2.champsimtrace.xz
 
-   ./bin/no-optimized-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace3.champsimtrace.xz 
+   ./bin/optimized-no-1core -warmup_instructions 25000000 -simulation_instructions 25000000 -traces ../given/traces/trace3.champsimtrace.xz 
    ```
 
 ### **4. Experimental Results**
@@ -346,51 +346,89 @@ The table below summarizes the speedup observed for each prefetcher.
 
 | **Trace** | **IP-Stride** | **Complex-Stride** | **Next-Line** | **Optimized** |
 |-----------|---------------|-------------------|---------------|--------------|
-| **Trace 1** | 1.10          | 1.05              | 1.12          | **1.20**      |
-| **Trace 2** | 1.15          | 1.25              | 1.05          | **1.30**      |
-| **Trace 3** | 1.08          | 1.12              | 1.15          | **1.22**      |
+| **Trace 1** | 0.986          | 0.966              | 1.40          | **1.38**      |
+| **Trace 2** | 3.31          | 3.66              | 3.80          | **3.79**      |
+| **Trace 3** | 1.24          | 1.19              | 0.88          | **1.19**      |
 
 #### **Figure 1: Speedup Analysis for Different Prefetchers**
 
-<p align="center">
-  <img src="dummy_speedup_trace1.png" alt="Speedup Analysis for Trace 1" style="width:60%;"/>
-</p>
+1. **Trace 1**
+   <p align="center">
+     <img src="./graphs/task3-speedup-trace1.png" alt="Speedup Analysis for Trace 1" style="width:60%;"/>
+   </p>
+2. **Trace 1**
+   <p align="center">
+     <img src="./graphs/task3-speedup-trace2.png" alt="Speedup Analysis for Trace 2" style="width:60%;"/>
+   </p>
+3. **Trace 1**
+   <p align="center">
+     <img src="./graphs/task3-speedup-trace3.png" alt="Speedup Analysis for Trace 3" style="width:60%;"/>
+   </p>
+
 
 #### **4.2 L1D MPKI Analysis**
 
 L1D MPKI (Misses Per Kilo Instructions) is a crucial metric to measure prefetching efficiency. The lower the MPKI, the more effective the prefetcher.
 
-**Table 2: L1D MPKI Comparison for Traces 1, 2, and 3**
+**Table 2: L1D MPKI Comparison for Trace 1**
 
-| **Prefetcher**         | **L1D MPKI (Total)** | **L1D MPKI (Load)** |
+| **Prefetcher**         | **L1D MPKI (Load)** | **L1D MPKI (Total)** |
 |------------------------|----------------------|---------------------|
-| **No Prefetcher**      | [Baseline Value]      | [Baseline Load]     |
-| **IP-Stride**          | [IP-Str Value]        | [IP-Str Load]       |
-| **Complex-Stride**     | [Comp-Str Value]      | [Comp-Str Load]     |
-| **Next-Line**          | [Next-Line Value]     | [Next-Line Load]    |
-| **Optimized**          | [Optimized Value]     | [Optimized Load]    |
+| **No Prefetcher**      | 45.4355              | 48.21               |
+| **IP-Stride**          | 45.6271              | 49.2384             |
+| **Complex-Stride**     | 45.9344              | 52.2531             |
+| **Next-Line**          | 49.1029              | 216.727             |
+| **Optimized**          | 49.0278              | 215.469             |
+
+**Table 3: L1D MPKI Comparison for Trace 2**
+
+| **Prefetcher**         | **L1D MPKI (Load)** | **L1D MPKI (Total)** |
+|------------------------|----------------------|---------------------|
+| **No Prefetcher**      | 69.9647              | 69.9934             |
+| **IP-Stride**          | 16.067               | 70.7358             |
+| **Complex-Stride**     | 10.1996              | 72.2836             |
+| **Next-Line**          | 11.1521              | 73.259              |
+| **Optimized**          | 11.1701              | 73.2536             |
+
+**Table 4: L1D MPKI Comparison for Trace 3**
+
+| **Prefetcher**         | **L1D MPKI (Load)** | **L1D MPKI (Total)** |
+|------------------------|----------------------|---------------------|
+| **No Prefetcher**      | 154.963              | 155.279             |
+| **IP-Stride**          | 121.588              | 155.447             |
+| **Complex-Stride**     | 116.931              | 166.655             |
+| **Next-Line**          | 121.98               | 519.913             |
+| **Optimized**          | 116.956              | 167.325             |
 
 #### **Figure 2: L1D MPKI Analysis for Traces 1, 2, and 3**
 
-<p align="center">
-  <img src="dummy_mpki_trace1.png" alt="L1D MPKI Analysis for Trace 1" style="width:60%;"/>
-</p>
+1. **Trace 1**
+   <p align="center">
+     <img src="./graphs/task3-mpki-trace1.png" alt="L1D MPKI Analysis for Trace 1" style="width:60%;"/>
+   </p>
+2. **Trace 2**
+   <p align="center">
+     <img src="./graphs/task3-mpki-trace2.png" alt="L1D MPKI Analysis for Trace 2" style="width:60%;"/>
+   </p>
+3. **Trace 3**
+   <p align="center">
+     <img src="./graphs/task3-mpki-trace3.png" alt="L1D MPKI Analysis for Trace 3" style="width:60%;"/>
+   </p>
 
 ### **5. Observations and Key Takeaways**
 
 1. **IP-Stride Prefetcher**:
-   - Performed well in `Trace 1`, where the memory access pattern was predominantly linear.
-   - Struggled in `Trace 2` and `Trace 3` due to irregular access patterns.
+   - Performed well in `Trace 1` and `Trace 3`, where it could capture the memory access pattern.
+   - Struggled in `Trace 2` due to strides clashing for the same tracker slot and confidence.
 
 2. **Complex-Stride Prefetcher**:
-   - Showed higher speedup in `Trace 2`, where complex strides dominated.
-   - Overhead of tracking complex patterns reduced its efficiency in `Trace 1` and `Trace 3`.
+   - Showed relatively high accuracy across all traces.
 
 3. **Next-Line Prefetcher**:
-   - Effective for highly sequential workloads (`Trace 1`) but underperformed for traces with irregular patterns.
+   - Effective for highly sequential workloads (`Trace 1` & `Trace 2`) but underperformed for traces with irregular patterns.
 
 4. **Guldasta-e-Prefetcher (Optimized)**:
-   - Outperformed individual prefetchers across all traces, demonstrating the advantage of dynamically selecting the best prefetcher.
+   - Was able to select the best (close to best for trace 3) prefetcher across all traces, demonstrating the advantage of dynamically selecting prefetcher.
 
 ### **6. Conclusion**
 

@@ -39,7 +39,6 @@ extern uint8_t TRACE_ENDS_STOP;
 class O3_CPU {
   public:
     uint32_t cpu;
-    uint64_t return_due_to_ip, return_due_to_noncompletion,actual_retired;
 
     // trace
     FILE *trace_file;
@@ -125,9 +124,6 @@ class O3_CPU {
         // instruction
         instr_unique_id = 0;
         completed_executions = 0;
-        actual_retired = 0;
-        return_due_to_ip = 0;
-        return_due_to_noncompletion = 0;
         begin_sim_cycle = 0;
         begin_sim_instr = 0;
         last_sim_cycle = 0;

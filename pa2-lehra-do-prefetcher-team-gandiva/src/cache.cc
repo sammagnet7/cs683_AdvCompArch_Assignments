@@ -136,6 +136,7 @@ void CACHE::handle_fill()
 
             // COLLECT STATS
             sim_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
+
             sim_access[fill_cpu][MSHR.entry[mshr_index].type]++;
 
             // AGUS
@@ -520,6 +521,15 @@ void CACHE::handle_fill()
 
             // COLLECT STATS
             sim_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
+            if (MSHR.entry[mshr_index].type == 0) // Counting load misses
+            {
+                thr_demand_miss_total++;
+                if (polluting_prefetch(MSHR.entry[mshr_index].address)) // check if this miss was due to prior prefetch caused eviction
+                {
+                    thr_pf_pollution_total++;
+                }
+            }
+
             // Neelu: Capturing instruction stats for L2C
             if ((cache_type == IS_L2C) && (MSHR.entry[mshr_index].instruction == 1))
                 sim_instr_miss[fill_cpu][MSHR.entry[mshr_index].type]++;
@@ -1837,6 +1847,7 @@ void CACHE::handle_read()
                 if (block[set][way].prefetch)
                 {
                     pf_useful++;
+                    thr_pf_useful++;
                     if (prefetcher_type == 0)
                     { // IP STRIDE
                         pf_ip_useful++;
@@ -2206,10 +2217,16 @@ void CACHE::handle_read()
                             if (cache_type == IS_ITLB || cache_type == IS_DTLB || cache_type == IS_STLB)
                             {
                                 if ((MSHR.entry[mshr_index].type == PREFETCH_TRANSLATION || MSHR.entry[mshr_index].type == TRANSLATION_FROM_L1D) && RQ.entry[index].type == LOAD_TRANSLATION)
+                                {
                                     ++pf_late;
+                                    ++thr_pf_late;
+                                }
                             }
                             else
+                            {
                                 ++pf_late; //@v Late prefetch-> on-demand requests hit in MSHR
+                                ++thr_pf_late;
+                            }
 
                             RQ.entry[index].cycle_enqueued = MSHR.entry[mshr_index].cycle_enqueued;
                             MSHR.entry[mshr_index] = RQ.entry[index];
@@ -2935,6 +2952,23 @@ void CACHE::fill_cache(uint32_t set, uint32_t way, PACKET *packet)
     if (block[set][way].prefetch && (block[set][way].used == 0))
         pf_useless++;
 
+    if (block[set][way].valid == true)
+    {
+        thr_eviction_count++;
+        if(best_pf_decided) // call throttler only after prefetcher is finalised
+        throttler_operate();
+    }
+
+    if (cache_type == IS_L1D) // Pollution stats
+    {
+        if (block[set][way].valid && !block[set][way].prefetch && packet->type == PREFETCH)
+        { // A valid non prefetch block is being evicted by a prefetch block
+
+            set_index(block[set][way].address); // Set the bloom filter denoting the eviction caused by prefetch block
+        }
+        unset_index(packet->address); // Unset the bit in filter for the fill
+    }
+
     if (block[set][way].valid == 0)
         block[set][way].valid = 1;
     block[set][way].dirty = 0;
@@ -3084,6 +3118,174 @@ void CACHE::flush_TLB()
         {
             block[set][way].valid = 0;
         }
+    }
+}
+
+int CACHE::set_index(uint64_t address)
+{
+    uint64_t lsb_bits = address & 0xFFF;
+    uint64_t msb_bits = (address >> 12) & 0xFFF;
+    pollution_filter[msb_bits ^ lsb_bits] = 1;
+    return 0;
+}
+
+int CACHE::unset_index(uint64_t address)
+{
+    uint64_t lsb_bits = address & 0xFFF;
+    uint64_t msb_bits = (address >> 12) & 0xFFF;
+    pollution_filter[msb_bits ^ lsb_bits] = 0;
+    return 0;
+}
+
+char CACHE::polluting_prefetch(uint64_t address)
+{
+    uint64_t lsb_bits = address & 0xFFF;
+    uint64_t msb_bits = (address >> 12) & 0xFFF;
+    if (pollution_filter[msb_bits ^ lsb_bits] == 1)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+void CACHE::throttler_operate()
+{
+
+    if (thr_eviction_count == thr_window_len && cache_type == IS_L1D && warmup_complete[0])
+    {
+        // Sampling based counter update
+        thr_pf_sent_li = 0.5 * thr_pf_sent_li + 0.5 * thr_pf_sent;
+        thr_pf_useful_li = 0.5 * thr_pf_useful_li + 0.5 * thr_pf_useful;
+        thr_pf_late_li = 0.5 * thr_pf_late_li + 0.5 * thr_pf_late;
+        thr_demand_miss_total_li = 0.5 * thr_demand_miss_total_li + 0.5 * thr_demand_miss_total;
+        thr_pf_pollution_total_li = 0.5 * thr_pf_pollution_total_li + 0.5 * thr_pf_pollution_total;
+        // Reset counters for next interval
+        thr_pf_sent = thr_pf_useful = thr_pf_late = thr_demand_miss_total = thr_pf_pollution_total = thr_eviction_count = 0;
+        double thr_pf_accuracy = 0, thr_pf_lateness = 0, thr_pf_induced_pollution = 0, thr_coverage = 0;
+        if (thr_pf_sent_li)
+        {
+            thr_pf_accuracy = 1.0 * thr_pf_useful_li / thr_pf_sent_li;
+        }
+        if (thr_pf_useful_li)
+        {
+            thr_pf_lateness = 1.0 * thr_pf_late_li / thr_pf_useful_li;
+        }
+        if (thr_demand_miss_total_li)
+        {
+            thr_pf_induced_pollution = 1.0 * thr_pf_pollution_total_li / thr_demand_miss_total_li;
+        }
+        if(thr_demand_miss_total_li && thr_pf_useful_li){
+            thr_coverage = 1.0*thr_pf_useful_li/(thr_demand_miss_total_li + thr_pf_useful_li);
+        }
+        // if (thr_coverage < 0.75){
+        //     if(config_counter < 5)
+        //         config_counter++;
+        // }
+        // Accuracy - High
+        // Lateness - Late
+        // Pollution - Polluting/Not Polluting
+        // -> Increment counter (to increase timeliness)
+        if (thr_pf_accuracy >= A_high && thr_pf_lateness > T_lateness)
+        {
+            if (config_counter < 5)
+                config_counter++;
+        }
+        // Accuracy - High
+        // Lateness - Not Late
+        // Pollution - Polluting
+        // -> Decrement (to reduce pollution)
+        else if (thr_pf_accuracy >= A_high && thr_pf_lateness < T_lateness && thr_pf_induced_pollution > T_pollution && thr_coverage < 0.7)
+        {
+            if (config_counter > 1)
+                config_counter--;
+        }
+        // Accuracy - Medium
+        // Lateness - Late
+        // Pollution - Non Polluting
+        // -> Increment counter (to increase timeliness)
+        else if (thr_pf_accuracy < A_high && thr_pf_accuracy >= A_low && thr_pf_lateness > T_lateness && thr_pf_induced_pollution < T_pollution)
+        {
+            if (config_counter < 5)
+                config_counter++;
+        }
+        // Accuracy - Medium
+        // Lateness - Late
+        // Pollution - Polluting
+        // -> Decrement (to reduce pollution)
+        else if (thr_pf_accuracy < A_high && thr_pf_accuracy >= A_low && thr_pf_lateness > T_lateness && thr_pf_induced_pollution > T_pollution && thr_coverage < 0.7)
+        {
+            if (config_counter > 1)
+                config_counter--;
+        }
+        // Accuracy - Medium
+        // Lateness - Not Late
+        // Pollution - Polluting
+        // -> Decrement (to reduce pollution)
+        else if (thr_pf_accuracy < A_high && thr_pf_accuracy >= A_low && thr_pf_lateness < T_lateness && thr_pf_induced_pollution > T_pollution && thr_coverage < 0.7)
+        {
+            if (config_counter > 1)
+                config_counter--;
+        }
+        // Accuracy - Low
+        // Lateness - Late
+        // Pollution - Non Polluting
+        // -> Decrement (to save bandwidth)
+        else if (thr_pf_accuracy < A_low && thr_pf_lateness > T_lateness && thr_pf_induced_pollution < T_pollution && thr_coverage < 0.7)
+        {
+            cout << "Coverage: " << thr_coverage << "\n";
+            if (config_counter > 1)
+                config_counter--;
+        }
+        // Accuracy - Low
+        // Lateness - Late
+        // Pollution - Polluting
+        // -> Decrement (to reduce pollution)
+        else if (thr_pf_accuracy < A_low && thr_pf_lateness > T_lateness && thr_pf_induced_pollution > T_pollution && thr_coverage < 0.7)
+        {
+            cout << "Coverage: " << thr_coverage << "\n";
+            if (config_counter > 1)
+                config_counter--;
+        }
+        // Accuracy - Low
+        // Lateness - Not Late
+        // Pollution - Polluting
+        // -> Decrement (to reduce pollution and save bandwidth)
+        else if (thr_pf_accuracy < A_low && thr_pf_lateness < T_lateness && thr_pf_induced_pollution > T_pollution && thr_coverage < 0.7)
+        {
+            cout << "Coverage: " << thr_coverage << "\n";
+            if (config_counter > 1)
+                config_counter--;
+        }
+        
+
+        // Prefetch parameter update based on config counter
+        if (config_counter == 1)
+        { // very conservative
+            thr_pf_distance = 2;
+            thr_pf_degree = 1;
+        }
+        else if (config_counter == 2)
+        { // conservative
+            thr_pf_distance = 4;
+            thr_pf_degree = 2;
+        }
+        else if (config_counter == 3)
+        { // middle-of-the-road
+            thr_pf_distance = 8;
+            thr_pf_degree = 5;
+        }
+        else if (config_counter == 4)
+        { // aggressive
+            thr_pf_distance = 16;
+            thr_pf_degree = 6;
+        }
+        else
+        { // very aggressive
+            thr_pf_distance = 32;
+            thr_pf_degree = 8;
+        }
+        // cout << " PF distance: " << thr_pf_distance << " PF degree: " << thr_pf_degree <<  '\n';
+
     }
 }
 
@@ -3674,6 +3876,7 @@ int CACHE::prefetch_line(uint64_t ip, uint64_t base_addr, uint64_t pf_addr, int 
         add_pq(&pf_packet);
         DP(if (warmup_complete[pf_packet.cpu]) { cout << "returned from add_pq" << endl; });
         pf_issued++;
+        thr_pf_sent++;
 
         if (cache_type == IS_L1D)
         {
@@ -3718,6 +3921,7 @@ int CACHE::prefetch_translation(uint64_t ip, uint64_t pf_addr, int pf_fill_level
         add_pq(&pf_packet);
         DP(if (warmup_complete[pf_packet.cpu]) { cout << "returned from add_pq" << endl; });
         pf_issued++;
+        thr_pf_sent++;
 
         return 1;
     }
@@ -3764,7 +3968,10 @@ int CACHE::kpc_prefetch_line(uint64_t base_addr, uint64_t pf_addr, int pf_fill_l
         int return_val = add_pq(&pf_packet);
 
         if (return_val > -2) //@Vishal: In some cases, even if the PQ is empty, request cannot be serviced.
+        {
             pf_issued++;
+            thr_pf_sent++;
+        }
 
         return 1;
     }
@@ -3976,6 +4183,7 @@ int CACHE::add_pq(PACKET *packet)
         //@Vishal: Add translation packet from PQ to L2 cache.
         ooo_cpu[packet->cpu].STLB.add_rq(&translation_packet);
         pf_issued++;
+        thr_pf_sent++;
 #endif
     }
 

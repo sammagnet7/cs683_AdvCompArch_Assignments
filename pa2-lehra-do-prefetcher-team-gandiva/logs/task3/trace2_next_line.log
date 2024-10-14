@@ -26,7 +26,6 @@ Warmup complete CPU 0 instructions: 25000001 cycles: 9335649 (Simulation time: 0
 
 Heartbeat CPU 0 instructions: 30000001 cycles: 23005164 heartbeat IPC: 0.64366 cumulative IPC: 0.365777 (Simulation time: 0 hr 2 min 10 sec) 
 Heartbeat CPU 0 instructions: 40000002 cycles: 50064026 heartbeat IPC: 0.369565 cumulative IPC: 0.368294 (Simulation time: 0 hr 3 min 6 sec) 
-Retire attempted: 68059130 Failed due to ip: 884682 Failed due to non completion: 0 Retired instructions: 47500118
 Heartbeat CPU 0 instructions: 50000000 cycles: 76632625 heartbeat IPC: 0.376384 cumulative IPC: 0.371488 (Simulation time: 0 hr 4 min 2 sec) 
 Finished CPU 0 instructions: 25000000 cycles: 67296998 cumulative IPC: 0.371488 (Simulation time: 0 hr 4 min 2 sec) 
 

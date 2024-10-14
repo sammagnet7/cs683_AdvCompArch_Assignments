@@ -2786,7 +2786,6 @@ void O3_CPU::retire_rob()
     for (uint32_t n = 0; n < RETIRE_WIDTH; n++)
     {
         if (ROB.entry[ROB.head].ip == 0){
-            return_due_to_ip++;
             return;
         }
             
