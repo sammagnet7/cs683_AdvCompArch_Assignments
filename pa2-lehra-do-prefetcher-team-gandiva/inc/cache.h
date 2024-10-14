@@ -127,7 +127,7 @@ public:
     // Throttling knobs
     uint64_t thr_pf_degree=5, thr_pf_distance=8;
     // Sampling window
-    uint64_t thr_window_len = 384; // Half the number of L1D blocks
+    uint64_t thr_window_len = 1536; // Half the number of L1D blocks
     // Accuracy counters
     uint64_t thr_pf_sent, thr_pf_sent_li, thr_pf_useful, thr_pf_useful_li;
     // Lateness counter

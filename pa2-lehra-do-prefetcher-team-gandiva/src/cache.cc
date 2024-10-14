@@ -2955,8 +2955,8 @@ void CACHE::fill_cache(uint32_t set, uint32_t way, PACKET *packet)
     if (block[set][way].valid == true)
     {
         thr_eviction_count++;
-        if(best_pf_decided) // call throttler only after prefetcher is finalised
-        throttler_operate();
+        // if(best_pf_decided) // call throttler only after prefetcher is finalised
+        // throttler_operate();
     }
 
     if (cache_type == IS_L1D) // Pollution stats
