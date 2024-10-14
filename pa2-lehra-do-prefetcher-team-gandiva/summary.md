@@ -41,7 +41,7 @@ The core logic is handled within the `stlb_prefetcher_operate()` function, which
     - **Figure 1: State machine implemented:**
 
 <p align="center">
-  <img src="state machine.png" alt="State machine" style="width:60%;"/>
+  <img src="./state-diagram.png" alt="State machine" style="width:60%;"/>
 </p>
 
 1. **Prefetching**:
