@@ -225,7 +225,7 @@ The performance of the implemented prefetchers was evaluated against a **baselin
 ##### **2.3.2 L1D MPKI Analysis**
 
 - **Baseline**: Without any prefetching, the L1D Load Misses Per 1000 Instructions (MPKI) was observed to be `69.9647`.
-- **IP-Stride**: The IP-Stride prefetcher reduced L1D MPKI by `30.9%` over the baseline.
+- **IP-Stride**: The IP-Stride prefetcher reduced L1D MPKI by `77%` over the baseline.
 - **Complex-Stride**: The Complex-Stride prefetcher demonstrated a more significant reduction of `85.7%` in L1D MPKI compared to IP-Stride and baseline.
 
 | **Prefetcher**         | **L1D MPKI (Load)** | **L1D MPKI (Total)** |
@@ -234,8 +234,8 @@ The performance of the implemented prefetchers was evaluated against a **baselin
 | **IP-Stride**          | 16.067               | 70.7358             |
 | **Complex-Stride**     | 9.98436              | 72.0802             |
 
-- **Plot Placeholder**:
-  ![L1D MPKI Analysis](./graphs/task2-speedup.png)
+- **Plot**:
+  ![L1D MPKI Analysis](./graphs/task2-mpki.png)
 
 ---
 
@@ -286,7 +286,7 @@ The strategy involves:
 #### **2.1 `optimized.l1d_pref` Implementation**
 
 1. **PHASE_LENGTH Parameter**:
-   - Took a `PHASE_LENGTH` value of `10W000` load instructions to balance between learning and execution phases.
+   - Took a `PHASE_LENGTH` value of `10000` load instructions to balance between learning and execution phases.
 
 2. **Prefetcher Classes**:
    - Implement separate counters for each prefetcher (`IPStride`, `ComplexStride`, `NextLine`) and a counter tracking demand misses
@@ -356,11 +356,11 @@ The table below summarizes the speedup observed for each prefetcher.
    <p align="center">
      <img src="./graphs/task3-speedup-trace1.png" alt="Speedup Analysis for Trace 1" style="width:60%;"/>
    </p>
-2. **Trace 1**
+2. **Trace 2**
    <p align="center">
      <img src="./graphs/task3-speedup-trace2.png" alt="Speedup Analysis for Trace 2" style="width:60%;"/>
    </p>
-3. **Trace 1**
+3. **Trace 3**
    <p align="center">
      <img src="./graphs/task3-speedup-trace3.png" alt="Speedup Analysis for Trace 3" style="width:60%;"/>
    </p>
@@ -418,7 +418,7 @@ L1D MPKI (Misses Per Kilo Instructions) is a crucial metric to measure prefetchi
 ### **5. Observations and Key Takeaways**
 
 1. **IP-Stride Prefetcher**:
-   - Performed well in `Trace 1` and `Trace 3`, where it could capture the memory access pattern.
+   - Performed well in `Trace 3`and `Trace1`, where it could capture the memory access pattern.
    - Struggled in `Trace 2` due to strides clashing for the same tracker slot and confidence.
 
 2. **Complex-Stride Prefetcher**:
