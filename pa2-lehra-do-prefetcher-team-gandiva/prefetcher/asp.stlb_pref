@@ -1,0 +1,180 @@
+#include "cache.h"
+
+// ------------------------- DO NOT CHANGE -------------------------------- //
+#define IP_TRACKER_COUNT 64 // Number of IP trackers
+// ------------------------- DO NOT CHANGE -------------------------------- //
+
+#define PREFETCH_DEGREE 8// Prefetch degree - you need to vary this!
+
+// Define states for stride consistency
+#define INITIAL 0
+#define STEADY 1
+#define TRANSIENT 2
+#define NOPRED 3
+
+// Global counter to keep track of the current time
+uint64_t asp_global_time = 0;
+
+class IP_TRACKER
+{
+public:
+	// ------------------------- Define the IP_TRACKER class here ------------------------- //
+	uint64_t ip;          // Instruction pointer
+	uint64_t last_addr;   // Last address referenced
+	int64_t last_stride;  // Last stride calculated
+	int state;            // State of the tracker
+	uint64_t access_time; // Last access time for LRU tracking
+
+	IP_TRACKER()
+	{
+		ip = 0;
+		last_addr = 0;
+		last_stride = 0;
+		state = INITIAL;
+		access_time = 0;
+	}
+};
+
+IP_TRACKER asp_trackers[IP_TRACKER_COUNT];
+
+// ------------------------- Initialize the prefetcher ------------------------- //
+void CACHE::stlb_prefetcher_initialize()
+{
+	cout << "CPU " << cpu << " STLB arbitrary stride prefetcher" << endl;
+
+	asp_global_time = 0; // Reset global time counter
+}
+
+// --------------- This is the main prefetcher operate function ---------------- //
+void CACHE::stlb_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint64_t prefetch_id, uint8_t instruction)
+{
+	// ------------------------ Add Arbitrary Stride pf_address logic here ----------------------- //
+	asp_global_time++; // Increment the global time on each access
+	if (asp_global_time == UINT64_MAX)
+	{
+		asp_global_time = 0;
+	}
+
+	// Search for the IP in the tracker table
+	int tracker_index = -1;
+
+	for (int i = 0; i < IP_TRACKER_COUNT; i++)
+	{
+		if (asp_trackers[i].ip == ip)
+		{
+			tracker_index = i;
+			break;
+		}
+	}
+
+	if (tracker_index == -1)
+	{
+		// All trackers are full
+		// apply LRU replacement policy
+		uint64_t min_time = UINT64_MAX;
+		for (int i = 0; i < IP_TRACKER_COUNT; i++)
+		{
+			if (asp_trackers[i].access_time < min_time)
+			{
+				min_time = asp_trackers[i].access_time;
+				tracker_index = i;
+			}
+		}
+
+		// Initialize the new tracker with current IP
+		asp_trackers[tracker_index].ip = ip;
+		asp_trackers[tracker_index].last_addr = addr;
+		asp_trackers[tracker_index].last_stride = 0;
+		asp_trackers[tracker_index].state = INITIAL;
+		asp_trackers[tracker_index].access_time = asp_global_time;
+
+		return;
+	}
+
+	IP_TRACKER *tracker = &asp_trackers[tracker_index];
+	// Update the access time for LRU tracking
+	tracker->access_time = asp_global_time;
+	// Calculate the stride
+	int64_t stride = addr - tracker->last_addr;
+	// State machine logic to handle stride consistency
+	switch (tracker->state)
+	{
+	case INITIAL: // 2nd time access
+		if (stride != 0 && stride == tracker->last_stride)
+		{
+			tracker->state = STEADY;
+			tracker->last_addr = addr;
+		}
+		else if (stride != 0 && stride != tracker->last_stride)
+		{
+			tracker->last_stride = stride;
+			tracker->state = TRANSIENT;
+			tracker->last_addr = addr;
+		}
+
+		break;
+
+	case TRANSIENT:
+		if (stride == tracker->last_stride)
+		{
+			tracker->state = STEADY;
+			tracker->last_addr = addr;
+		}
+		else if (stride != tracker->last_stride)
+		{
+			tracker->last_stride = stride;
+			tracker->last_addr = addr;
+			tracker->state = NOPRED;
+		}
+		break;
+
+	case STEADY:
+		if (stride != tracker->last_stride)
+		{
+			tracker->state = INITIAL;
+			tracker->last_stride = 0;
+			tracker->last_addr = addr;
+		}
+		else if (stride == tracker->last_stride) {
+			tracker->last_addr = addr;
+		}
+		break;
+	case NOPRED:
+		if (stride == tracker->last_stride)
+		{
+			tracker->state = TRANSIENT;
+			tracker->last_addr = addr;
+		}
+		else {
+			tracker->last_stride = stride;
+			tracker->last_addr = addr;
+		}
+		break;
+	}
+	// Prefetch logic: Prefetch only if in the STEADY state
+	if (tracker->state == STEADY)
+	{
+		for (int i = 1; i <= PREFETCH_DEGREE; i++)
+		{
+			uint64_t pf_address = addr + (i * tracker->last_stride);
+
+			// Prefetch the calculated address
+			prefetch_translation(ip, pf_address, (int)2, 0, prefetch_id, instruction);
+		}
+	}
+
+	return;
+}
+
+// ------------------------- DO NOT CHANGE -------------------------------- //
+void CACHE::stlb_prefetcher_cache_fill(uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch, uint64_t evicted_addr, uint32_t metadata_in)
+{
+	return;
+}
+
+void CACHE::stlb_prefetcher_final_stats()
+{
+	cout << "CPU " << cpu << " STLB arbitrary stride prefetcher final stats" << endl;
+	cout << "Degree: " << PREFETCH_DEGREE << endl;
+}
+// ------------------------- DO NOT CHANGE -------------------------------- //
