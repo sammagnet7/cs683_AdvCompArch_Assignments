@@ -435,3 +435,48 @@ L1D MPKI (Misses Per Kilo Instructions) is a crucial metric to measure prefetchi
 The **Guldasta-e-Prefetcher** successfully combines multiple prefetchers, dynamically adapting to varying workload characteristics. This implementation significantly reduces L1D MPKI and boosts speedup compared to individual prefetchers, making it a robust solution for diverse workloads. Further refinements, such as adaptive `PHASE_LENGTH` or hybrid state machines, could yield even better results.
 
 ---
+
+## **Task 4**
+### Feedback-Directed Prefetching in ChampSim
+   - Reference: https://doi.org/10.1109/HPCA.2007.346185
+#### 1. **Motivation**
+Hardware prefetchers are crucial for improving memory access latency by predicting and fetching data before it is requested by the processor. However, aggressive prefetching can lead to bandwidth wastage and cache pollution when inaccurate prefetches are made. Balancing the timeliness, accuracy, and pollution of prefetching is essential for performance improvement.
+
+The goal of implementing feedback-directed prefetching is to dynamically adjust prefetch aggressiveness based on runtime characteristics like accuracy, lateness, and pollution. This approach enhances the balance between aggressive prefetching for timely access and conservative prefetching to reduce pollution, ensuring efficient use of memory bandwidth.
+
+#### 2. **Design Overview**
+The feedback-directed prefetcher throttler adapts prefetching behavior by continuously monitoring metrics such as:
+- **Accuracy**: The ratio of useful prefetches to total prefetches.
+- **Lateness**: The fraction of useful prefetches that arrive after they are needed.
+- **Pollution**: The ratio of cache pollution induced by prefetches to demand misses.
+
+Based on these metrics, the throttler adjusts two key parameters:
+- **Prefetch degree**: The number of prefetches issued for each demand miss.
+- **Prefetch distance**: The distance between the demand request and the prefetch in memory address space.
+
+#### 3. **Implementation Details**
+The prefetch throttler operates within a defined window of cache accesses (denoted as `thr_window_len`), updating prefetch parameters when the window is completed. The throttler logic is designed for the L1 data cache (L1D) and only activates when the system is out of warmup mode.
+
+At each interval, the following actions take place:
+1. **Metric Calculation**: The prefetch throttler tracks several metrics—prefetch accuracy, lateness, induced pollution, and coverage. These metrics are updated using exponential decay (50% weight for past intervals and 50% for the current window) to ensure the throttler adapts smoothly to changing workloads.
+   
+2. **Throttling Logic**: The prefetcher's aggressiveness is controlled by a `config_counter` that can be incremented or decremented based on the computed metrics. The following conditions are checked:
+   - High accuracy and lateness lead to increasing prefetch timeliness by incrementing the `config_counter`.
+   - High accuracy but excessive pollution leads to decreasing aggressiveness by decrementing the `config_counter`.
+   - Medium accuracy with either high lateness or high pollution also triggers adjustments.
+   - Low accuracy in combination with high lateness or pollution results in conservative prefetching.
+
+3. **Prefetch Parameter Adjustment**: The throttler uses the value of `config_counter` to set the prefetch distance and degree. These values determine how far ahead the prefetcher looks (distance) and how many prefetches it issues for each demand miss (degree):
+   - **Very conservative**: Prefetch distance of 2, prefetch degree of 1.
+   - **Conservative**: Prefetch distance of 4, prefetch degree of 2.
+   - **Middle-of-the-road**: Prefetch distance of 8, prefetch degree of 5.
+   - **Aggressive**: Prefetch distance of 16, prefetch degree of 6.
+   - **Very aggressive**: Prefetch distance of 32, prefetch degree of 8.
+
+4. **Metrics Reset**: After every interval, all counters (`thr_pf_sent`, `thr_pf_useful`, `thr_pf_late`, `thr_demand_miss_total`, `thr_pf_pollution_total`) are reset for the next window.
+
+#### 4. **Summary**
+This implementation of feedback-directed prefetching dynamically adapts prefetch aggressiveness by monitoring and adjusting prefetch parameters based on runtime metrics. The throttler ensures that the prefetcher remains aggressive when it is beneficial (high accuracy and low pollution) and conservative when prefetches are either late, inaccurate, or polluting the cache.
+
+By adjusting prefetch behavior at runtime, this method aims to maximize the benefits of prefetching (increased cache hits, reduced memory latency) while minimizing its downsides (cache pollution and bandwidth wastage), thereby improving overall system performance.
+

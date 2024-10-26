@@ -6,15 +6,13 @@
 #define PREFETCH_DEGREE 5            // Prefetch degree
 // ------------------------- DO NOT CHANGE -------------------------------- //
 
-#define PHASE_LENGTH 10000 // Choose an appropriate phase length
-uint64_t loadCounts=0;
-
-uint64_t num_prefs = 0; // To keep a track of the number of prefetched lines
+#define TRAINING_PHASE_LENGTH 5000 // Choose an appropriate phase length
+#define PREFETCH_PHASE_LENGTH 25000
 
 // Track the accuracy of the different prefetchers
-double accuracy_ip;
-double accuracy_cplx;
-double accuracy_nl;
+double coverage_ip;
+double coverage_cplx;
+double coverage_nl;
 uint64_t useful_pf[3] = {0};
 uint64_t total_pf[3] = {0};
 #define IP_STRIDE 0 // IP-Stride Prefetcher
@@ -152,79 +150,110 @@ IP_TABLE *find_ip_entry(uint64_t ip, int cpu, uint64_t curr_page,
         return nullptr;
     }
 }
-
 // ------------------------- Initialize the prefetcher ------------------------- //
 void CACHE::l1d_prefetcher_initialize()
 {
     cout << "CPU " << cpu << " L1D Optimized prefetcher" << endl;
     global_time = 0; // Reset global time counter
 }
-void get_current_prefetcher(uint64_t pf_useful, uint64_t pf_lower_level)
+// ------------------------- Initialize the prefetcher ------------------------- //
+void CACHE::get_current_prefetcher(uint64_t pf_useful, uint64_t pf_lower_level)
 {
-    static int phase_progress = 0; // stores progress in current phase
-    static bool decided = false;
+    static int prefetch_progress = 0;
     // Best prefetcher not yet decided
-    if (!decided)
+    if (!best_pf_decided)
     {
         // On a phase end
         phase_progress++;
-        if (phase_progress == PHASE_LENGTH)
+        if (phase_progress == TRAINING_PHASE_LENGTH)
         {
-            cout << "Useful: "<< pf_useful << " Total: " <<pf_lower_level << "\n";
-            double accuracy = (100.0*pf_useful)/pf_lower_level; // calculate accuracy
+            // cout << "Useful: " << pf_useful << " Total: " << pf_lower_level << "\n";
+            double accuracy = (1.0 * pf_useful) / pf_lower_level; // calculate accuracy
+            double coverage = (1.0)*pf_useful/(pf_useful + thr_demand_miss_total);
+            
+            double weight = 0.3*accuracy + 0.7*coverage;
             if (prefetcher == IP_STRIDE)
             {
-                accuracy_ip = accuracy;
-                cout << "IP stride accuracy after phase end: " << accuracy_ip << "\n";
+                coverage_ip = coverage;
+                cout << "IP stride coverage after phase end: " <<coverage <<" Accuracy: " << accuracy<< " weight: " << weight <<"\n";
             }
 
             if (prefetcher == CPLX)
             {
-                accuracy_cplx = accuracy;
-                cout << "CPLX accuracy after phase end: " << accuracy_cplx << "\n";
+                coverage_cplx = coverage;
+                cout << "CPLX coverage after phase end: " <<coverage <<" Accuracy: " << accuracy<< " weight: " << weight << "\n";
             }
 
             if (prefetcher == NL)
             {
-                accuracy_nl = accuracy;
-                cout << "NL stride accuracy after phase end: " << accuracy_nl << "\n";
+                coverage_nl = coverage;
+                cout << "NL stride coverage after phase end: "<<coverage <<" Accuracy: " << accuracy <<  " weight: " << weight << "\n";
             }
 
             prefetcher++;        // switch to next prefetcher
             phase_progress = 0;  // reset the progress
             if (prefetcher == 3) // When All phases done
             {
+                
                 // Find which one has highest accuracy and set that as prefetcher for the remaining SIM instructions
-                int most_acc_pf = (accuracy_cplx > accuracy_ip) ? CPLX : IP_STRIDE;
-                most_acc_pf = (accuracy_nl > std::max(accuracy_ip, accuracy_cplx)) ? NL : most_acc_pf;
-                prefetcher = most_acc_pf;
-                decided = true;
-                cout << "Most accurate prefetcher: " << prefetcher << "\n";
+                int best_pf = (coverage_cplx > coverage_ip) ? CPLX : IP_STRIDE;
+                best_pf = (coverage_nl > std::max(coverage_ip, coverage_cplx)) ? NL : best_pf;
+                prefetcher = best_pf;
+                // Enable throttler
+                best_pf_decided = true;
+                // reset counters
+                thr_pf_sent = 0;
+                thr_pf_useful = 0;
+                thr_pf_late = 0;
+                thr_pf_pollution_total = 0;
+                thr_eviction_count = 0;
+                for(int i = 0; i < 4096; i++){
+                    pollution_filter[i] = 0;
+                }
+                cout << "Best prefetcher: " << prefetcher << "\n";
+            }
+            else{
+                thr_demand_miss_total=0;
+            }
+        }   
+    }
+    else{
+            prefetch_progress++;
+            if(prefetch_progress == PREFETCH_PHASE_LENGTH){
+                best_pf_decided = false;
+                prefetcher = IP_STRIDE;
+                pf_ip_useful = 0;
+                pf_cplx_useful = 0;
+                pf_nl_useful = 0;
+                total_pf[IP_STRIDE] = 0;
+                total_pf[CPLX] = 0;
+                total_pf[NL] = 0;
+                prefetch_progress = 0;
             }
         }
-    }
 }
 // --------------- This is the main prefetcher operate function ---------------- //
 void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit, uint8_t type, uint8_t critical_ip_flag)
 {
-    loadCounts++;
     uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE;
-
+    // Learning phase
     if (warmup_complete[0] == 1)
     {
-        if(prefetcher == IP_STRIDE){
+        if (prefetcher == IP_STRIDE)
+        {
             get_current_prefetcher(pf_ip_useful, total_pf[IP_STRIDE]);
         }
-        if(prefetcher == CPLX){
+        if (prefetcher == CPLX)
+        {
             get_current_prefetcher(pf_cplx_useful, total_pf[CPLX]);
         }
-        if(prefetcher == NL){
+        if (prefetcher == NL)
+        {
             get_current_prefetcher(pf_nl_useful, total_pf[NL]);
         }
 
         if (prefetcher == IP_STRIDE)
         {
-            
 
             // IP-Stride Prefetcher
             // ------------------------ Add IP-Stride pf_address logic here ----------------------- //
@@ -242,11 +271,6 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             {
                 global_time = 0;
             }
-            if (cache_hit)
-            {
-                useful_pf[IP_STRIDE]++;
-            }
-
             // Search for the IP in the tracker table
             int tracker_index = -1;
             for (int i = 0; i < IP_TRACKER_COUNT; i++)
@@ -359,14 +383,14 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
                     pref_offset += tracker->last_stride; // strides get added in
                     // subsequent prefetchs
 
-                    uint64_t pf_address = (cl_addr + thr_pf_distance * pref_offset) << LOG2_BLOCK_SIZE;
+                    uint64_t pf_address = (cl_addr + pref_offset) << LOG2_BLOCK_SIZE;
 
                     // only issue a prefetch if the prefetch address is in the same 4 KB page
                     // as the current demand access address
                     if ((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE))
                         break;
 
-                    prefetch_line(ip, addr, pf_address, FILL_L1, 0);
+                    prefetch_line(ip, addr, pf_address, FILL_L1, IP_STRIDE);
                     total_pf[IP_STRIDE]++;
                 }
             }
@@ -374,7 +398,8 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
         }
         else if (prefetcher == CPLX)
         {
-            get_current_prefetcher(pf_cplx_useful, pf_lower_level);
+            // get_current_prefetcher(pf_cplx_useful, pf_lower_level);
+
             // Complex-Stride Prefetcher
             // --------------------- Add Complex-Stride pf_address logic here --------------------- //
             uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE; // Cache line address
@@ -382,16 +407,14 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             uint64_t cl_offset =
                 cl_addr & 0x3F; // Offset within a page (64 cache lines per page)
             uint16_t signature = 0, last_signature = 0;
-            if (cache_hit)
-            {
-                useful_pf[CPLX]++;
-            }
+
             // Find the IP table entry
             IP_TABLE *entry = find_ip_entry(ip, cpu, page_num, cl_offset);
             if (entry == nullptr) // First time entry
                 return;
 
             int64_t stride = cl_offset - entry->last_cl_offset;
+
             // don't do anything if same address is seen twice in a row
             if (stride == 0)
                 return;
@@ -400,8 +423,8 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             if (page_num !=
                 entry->last_page)
             { // 64 cache lines exist within a 4KB page (4KB / 64 bytes per cache line = 64). \
-				//The stride is measured in cache lines, so when a page boundary is crossed, \
-				//the prefetcher needs to adjust by B164 to compensate for the wrap-around effect.
+		//The stride is measured in cache lines, so when a page boundary is crossed, \
+		//the prefetcher needs to adjust by ±64 to compensate for the wrap-around effect.
                 stride = (stride < 0) ? stride + 64 : stride - 64;
             }
 
@@ -425,7 +448,7 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             { // if conf>=0, continue looking for delta_stride
 
                 int pref_offset = 0; // CPLX IP
-                for (int i = 0; i < PREFETCH_DEGREE; i++)
+                for (int i = 0; i < thr_pf_degree; i++)
                 {
                     pref_offset +=
                         CSPT[cpu][signature].delta_stride; // Predicted strides get added in
@@ -441,22 +464,23 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
                         break;
                     }
 
-                    prefetch_line(ip, addr, pf_address, FILL_L1, 1);
+                    prefetch_line(ip, addr, pf_address, FILL_L1, CPLX);
                     total_pf[CPLX]++;
+
                     signature = update_sig_l1(signature, CSPT[cpu][signature].delta_stride);
                 }
             }
+
+            // Update last page and cache line offset for this IP
+            entry->last_page = page_num;
+            entry->last_cl_offset = cl_offset;
         }
         else if (prefetcher == NL)
         {
-            get_current_prefetcher(pf_nl_useful, pf_lower_level);
+            // get_current_prefetcher(pf_nl_useful, pf_lower_level);
             // Next-Line Prefetcher
             // ----------------------- Add Next-line pf_address logic here ------------------------ //
-            if (cache_hit)
-            {
-                useful_pf[NL]++;
-            }
-            for (int i = 0; i < PREFETCH_DEGREE; i++)
+            for (int i = 0; i < thr_pf_degree; i++)
             {
                 uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE;
 
@@ -468,7 +492,7 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
                 if ((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE))
                     break;
 
-                prefetch_line(ip, addr, pf_address, FILL_L1, 2);
+                prefetch_line(ip, addr, pf_address, FILL_L1, NL);
                 total_pf[NL]++;
             }
             return;
@@ -478,7 +502,254 @@ void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip, uint8_t cache_hit
             assert(0);
         }
     }
+    // else{ 
+    //     if (prefetcher == IP_STRIDE)
+    //     {
 
+    //         // IP-Stride Prefetcher
+    //         // ------------------------ Add IP-Stride pf_address logic here ----------------------- //
+
+    //         uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE; // Cache line address
+    //         uint64_t page_num = addr >> LOG2_PAGE_SIZE; // 4KB page number
+    //         uint64_t cl_offset =
+    //             cl_addr & 0x3F; // Offset within a page (64 cache lines per page)
+
+    //         // ------------------------ Add IP-Stride pf_address logic here
+    //         // ----------------------- //
+
+    //         global_time++; // Increment the global time on each access
+    //         if (global_time == UINT64_MAX)
+    //         {
+    //             global_time = 0;
+    //         }
+    //         // Search for the IP in the tracker table
+    //         int tracker_index = -1;
+    //         for (int i = 0; i < IP_TRACKER_COUNT; i++)
+    //         {
+    //             if (trackers[i].ip == ip)
+    //             {
+    //                 tracker_index = i;
+    //                 break;
+    //             }
+    //         }
+
+    //         if (tracker_index == -1)
+    //         {
+    //             // All trackers are full
+    //             // apply LRU replacement policy
+    //             uint64_t min_time = UINT64_MAX;
+    //             for (int i = 0; i < IP_TRACKER_COUNT; i++)
+    //             {
+    //                 if (trackers[i].access_time < min_time)
+    //                 {
+    //                     min_time = trackers[i].access_time;
+    //                     tracker_index = i;
+    //                 }
+    //             }
+    //             // Initialize the new tracker with current IP
+    //             trackers[tracker_index].ip = ip;
+    //             trackers[tracker_index].last_cl_offset = cl_offset;
+    //             trackers[tracker_index].last_page = page_num;
+    //             trackers[tracker_index].last_stride = 0;
+    //             trackers[tracker_index].state = INITIAL;
+    //             trackers[tracker_index].access_time = global_time;
+
+    //             return;
+    //         }
+
+    //         IP_TRACKER *tracker = &trackers[tracker_index];
+    //         // Update the access time for LRU tracking
+    //         tracker->access_time = global_time;
+    //         // Calculate the stride
+    //         int64_t stride = cl_offset - tracker->last_cl_offset;
+    //         // don't do anything if same address is seen twice in a row
+    //         if (stride == 0)
+    //             return;
+
+    //         // page boundary learning
+    //         if (page_num !=
+    //             tracker
+    //                 ->last_page)
+    //         { // 64 cache lines exist within a 4KB page (4KB / 64 bytes per cache line = 64). \
+	// 			//The stride is measured in cache lines, so when a page boundary is crossed, \
+	// 			//the prefetcher needs to adjust by B164 to compensate for the wrap-around effect.
+    //             stride = (stride < 0) ? stride + 64 : stride - 64;
+    //         }
+
+    //         // State machine logic to handle stride consistency
+    //         switch (tracker->state)
+    //         {
+    //         case INITIAL: // 2nd time access
+    //             if (stride != 0 && stride == tracker->last_stride)
+    //             {
+    //                 tracker->state = STEADY;
+    //             }
+    //             else if (stride != 0 && stride != tracker->last_stride)
+    //             {
+    //                 tracker->last_stride = stride;
+    //                 tracker->state = TRANSIENT;
+    //             }
+    //             break;
+
+    //         case TRANSIENT:
+    //             if (stride == tracker->last_stride)
+    //             {
+    //                 tracker->state = STEADY;
+    //             }
+    //             else if (stride != tracker->last_stride)
+    //             {
+    //                 tracker->last_stride = stride;
+    //                 tracker->state = NOPRED;
+    //             }
+    //             break;
+
+    //         case STEADY:
+    //             if (stride != tracker->last_stride)
+    //             {
+    //                 tracker->state = INITIAL;
+    //                 tracker->last_stride = 0;
+    //             }
+    //             break;
+
+    //         case NOPRED:
+    //             if (stride == tracker->last_stride)
+    //             {
+    //                 tracker->state = TRANSIENT;
+    //             }
+    //             else
+    //             {
+    //                 tracker->last_stride = stride;
+    //             }
+    //             break;
+    //         }
+    //         tracker->last_cl_offset = cl_offset;
+    //         trackers[tracker_index].last_page = page_num;
+
+    //         // Prefetch logic: Prefetch only if in the STEADY state
+    //         if (tracker->state == STEADY)
+    //         {
+    //             int pref_offset = 0;
+    //             for (int i = 1; i <= thr_pf_degree; i++)
+    //             {
+    //                 pref_offset += tracker->last_stride; // strides get added in
+    //                 // subsequent prefetchs
+
+    //                 uint64_t pf_address = (cl_addr + pref_offset) << LOG2_BLOCK_SIZE;
+
+    //                 // only issue a prefetch if the prefetch address is in the same 4 KB page
+    //                 // as the current demand access address
+    //                 if ((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE))
+    //                     break;
+
+    //                 prefetch_line(ip, addr, pf_address, FILL_L1, IP_STRIDE);
+    //             }
+    //         }
+    //         return;
+    //     }
+    //     else if (prefetcher == CPLX)
+    //     {
+    //         // get_current_prefetcher(pf_cplx_useful, pf_lower_level);
+
+    //         // Complex-Stride Prefetcher
+    //         // --------------------- Add Complex-Stride pf_address logic here --------------------- //
+    //         uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE; // Cache line address
+    //         uint64_t page_num = addr >> LOG2_PAGE_SIZE; // 4KB page number
+    //         uint64_t cl_offset =
+    //             cl_addr & 0x3F; // Offset within a page (64 cache lines per page)
+    //         uint16_t signature = 0, last_signature = 0;
+
+    //         // Find the IP table entry
+    //         IP_TABLE *entry = find_ip_entry(ip, cpu, page_num, cl_offset);
+    //         if (entry == nullptr) // First time entry
+    //             return;
+
+    //         int64_t stride = cl_offset - entry->last_cl_offset;
+
+    //         // don't do anything if same address is seen twice in a row
+    //         if (stride == 0)
+    //             return;
+
+    //         // page boundary learning
+    //         if (page_num !=
+    //             entry->last_page)
+    //         { // 64 cache lines exist within a 4KB page (4KB / 64 bytes per cache line = 64). \
+	// 	//The stride is measured in cache lines, so when a page boundary is crossed, \
+	// 	//the prefetcher needs to adjust by ±64 to compensate for the wrap-around effect.
+    //             stride = (stride < 0) ? stride + 64 : stride - 64;
+    //         }
+
+    //         last_signature = entry->signature;
+    //         // update complex stride(CPLX) confidence
+    //         CSPT[cpu][last_signature].conf =
+    //             update_conf(stride, CSPT[cpu][last_signature].delta_stride,
+    //                         CSPT[cpu][last_signature].conf);
+
+    //         // update CPLX only if confidence is zero
+    //         if (CSPT[cpu][last_signature].conf == 0)
+    //             CSPT[cpu][last_signature].delta_stride = stride;
+
+    //         // calculate and update new signature in IP table
+    //         entry->signature = update_sig_l1(last_signature, stride);
+    //         signature = entry->signature;
+
+    //         if (CSPT[cpu][signature].conf >= 0 &&
+    //             CSPT[cpu][signature].delta_stride !=
+    //                 0)
+    //         { // if conf>=0, continue looking for delta_stride
+
+    //             int pref_offset = 0; // CPLX IP
+    //             for (int i = 0; i < thr_pf_degree; i++)
+    //             {
+    //                 pref_offset +=
+    //                     CSPT[cpu][signature].delta_stride; // Predicted strides get added in
+    //                 // subsequent prefetchs
+    //                 uint64_t pf_address = ((cl_addr + pref_offset) << LOG2_BLOCK_SIZE);
+
+    //                 // if prefetch address is not in same PAGE OR if new entry in CSPT OR
+    //                 // delta_stride is zero, break
+    //                 if (((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE)) ||
+    //                     (CSPT[cpu][signature].conf <= 0) ||
+    //                     (CSPT[cpu][signature].delta_stride == 0))
+    //                 {
+    //                     break;
+    //                 }
+
+    //                 prefetch_line(ip, addr, pf_address, FILL_L1, CPLX);
+    //                 signature = update_sig_l1(signature, CSPT[cpu][signature].delta_stride);
+    //             }
+    //         }
+
+    //         // Update last page and cache line offset for this IP
+    //         entry->last_page = page_num;
+    //         entry->last_cl_offset = cl_offset;
+    //     }
+    //     else if (prefetcher == NL)
+    //     {
+    //         // get_current_prefetcher(pf_nl_useful, pf_lower_level);
+    //         // Next-Line Prefetcher
+    //         // ----------------------- Add Next-line pf_address logic here ------------------------ //
+    //         for (int i = 0; i < thr_pf_degree; i++)
+    //         {
+    //             uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE;
+
+    //             // ----------------------- Next-line logic ------------------------ //
+    //             uint64_t pf_address = (cl_addr + ((i + 1))) << LOG2_BLOCK_SIZE;
+
+    //             // only issue a prefetch if the prefetch address is in the same 4 KB page
+    //             // as the current demand access address
+    //             if ((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE))
+    //                 break;
+
+    //             prefetch_line(ip, addr, pf_address, FILL_L1, NL);
+    //         }
+    //         return;
+    //     }
+    //     else
+    //     {
+    //         assert(0);
+    //     }
+
+    // }
     return;
 }
 
@@ -495,7 +766,6 @@ void CACHE::l1d_prefetcher_final_stats()
 {
     cout << "CPU " << cpu << " L1D optimized prefetcher final stats" << endl;
     cout << "Degree: " << PREFETCH_DEGREE << endl;
-    cout<< "Total loads"<< loadCounts << endl;
 
 }
 // ------------------------- DO NOT CHANGE -------------------------------- //
