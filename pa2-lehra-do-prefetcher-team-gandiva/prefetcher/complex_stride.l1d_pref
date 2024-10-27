@@ -1,0 +1,183 @@
+#include "cache.h"
+
+// ------------------------- DO NOT CHANGE -------------------------------- //
+#define NUM_IP_TABLE_ENTRIES 1024  // IP table entries
+#define PREFETCH_DEGREE 5          // Prefetch degree
+// ------------------------- DO NOT CHANGE -------------------------------- //
+
+// ------------ YOU CAN CHANGE THE IP_TABLE FOR YOU DESIGN ---------------- //
+class IP_TABLE {
+public:
+	uint64_t ip_tag;
+	uint64_t last_page;       // last page seen by IP
+	uint64_t last_cl_offset;  // last cl offset in the 4KB page
+	uint16_t ip_valid;        // Valid IP or not
+	uint16_t signature;       // CPLX signature
+
+	IP_TABLE() {
+		ip_tag = 0;
+		last_page = 0;
+		last_cl_offset = 0;
+		ip_valid = 0;
+		signature = 0;
+	};
+};
+
+class PRED_TABLE {
+public:
+	int delta_stride;
+	int conf;
+
+	PRED_TABLE() {
+		delta_stride = 0;
+		conf = 0;  // Confidence
+	};
+};
+
+IP_TABLE trackers_cplx[NUM_CPUS][NUM_IP_TABLE_ENTRIES];
+PRED_TABLE CSPT[NUM_CPUS][NUM_IP_TABLE_ENTRIES];
+
+// ------------------------- Updating the signature ----------------------------
+// //
+uint16_t update_sig_l1(uint16_t old_sig, int delta_stride) {
+	uint16_t new_sig = 0;
+	int sig_delta = 0;
+
+	// 7-bit sign magnitude form, since we need to track deltas from +63 to -63
+	sig_delta =
+	    (delta_stride < 0) ? (((-1) * delta_stride) + (1 << 6)) : delta_stride;
+	new_sig = ((old_sig << 1) ^ sig_delta) & 0x3FF;
+
+	return new_sig;
+}
+
+// ------------------- Updating confidence for the CPLX class ------------------
+// //
+int update_conf(int stride, int pred_stride, int conf) {
+	// Increase confidence if the predicted stride matches the observed stride,
+	// else decrease
+	if (stride == pred_stride) {
+		return std::min(conf + 1, 3);  // Max confidence level 3
+	} else {
+		return std::max(conf - 1, 0);  // Min confidence level 0
+	}
+}
+
+// ------------------------- Initialize the prefetcher -------------------------
+// //
+void CACHE::l1d_prefetcher_initialize() {
+	cout << "CPU " << cpu << " L1D Complex-Stride prefetcher initialized" << endl;
+}
+
+// ------------------- Helper function to find the IP table entry
+// --------------- //
+IP_TABLE *find_ip_entry(uint64_t ip, int cpu, uint64_t curr_page,
+                        uint64_t cl_offset) {
+	uint64_t ip_tag =
+	    ip & (NUM_IP_TABLE_ENTRIES - 1);  // Hash the IP to get index
+	IP_TABLE *entry = &trackers_cplx[cpu][ip_tag];
+
+	if (entry->ip_valid && entry->ip_tag == ip) {
+		return entry;
+	} else {
+		// Initialize a new entry if it's not valid or the tag doesn't match
+		entry->ip_tag = ip;
+		entry->ip_valid = 1;
+		entry->last_page = curr_page;
+		entry->last_cl_offset = cl_offset;
+		entry->signature = 0;
+		return nullptr;
+	}
+}
+
+// --------------- This is the main prefetcher operate function ----------------
+// //
+void CACHE::l1d_prefetcher_operate(uint64_t addr, uint64_t ip,
+                                   uint8_t cache_hit, uint8_t type,
+                                   uint8_t critical_ip_flag) {
+	uint64_t cl_addr = addr >> LOG2_BLOCK_SIZE;  // Cache line address
+	uint64_t page_num = addr >> LOG2_PAGE_SIZE;  // 4KB page number
+	uint64_t cl_offset =
+	    cl_addr & 0x3F;  // Offset within a page (64 cache lines per page)
+	uint16_t signature = 0, last_signature = 0;
+
+	// Find the IP table entry
+	IP_TABLE *entry = find_ip_entry(ip, cpu, page_num, cl_offset);
+	if (entry == nullptr)  // First time entry
+		return;
+
+	int64_t stride = cl_offset - entry->last_cl_offset;
+
+	// don't do anything if same address is seen twice in a row
+	if (stride == 0) return;
+
+	// page boundary learning
+	if (page_num !=
+	        entry->last_page) {  // 64 cache lines exist within a 4KB page (4KB / 64 bytes per cache line = 64). \
+		//The stride is measured in cache lines, so when a page boundary is crossed, \
+		//the prefetcher needs to adjust by ±64 to compensate for the wrap-around effect.
+		stride = (stride < 0) ? stride + 64 : stride - 64;
+	}
+
+	last_signature = entry->signature;
+	// update complex stride(CPLX) confidence
+	CSPT[cpu][last_signature].conf =
+	    update_conf(stride, CSPT[cpu][last_signature].delta_stride,
+	                CSPT[cpu][last_signature].conf);
+
+	// update CPLX only if confidence is zero
+	if (CSPT[cpu][last_signature].conf == 0)
+		CSPT[cpu][last_signature].delta_stride = stride;
+
+	// calculate and update new signature in IP table
+	entry->signature = update_sig_l1(last_signature, stride);
+	signature = entry->signature;
+
+	if (CSPT[cpu][signature].conf >= 0 &&
+	        CSPT[cpu][signature].delta_stride !=
+	        0) {  // if conf>=0, continue looking for delta_stride
+
+		int pref_offset = 0;  // CPLX IP
+		for (int i = 0; i < PREFETCH_DEGREE; i++) {
+			pref_offset +=
+			    CSPT[cpu][signature].delta_stride;  // Predicted strides get added in
+			// subsequent prefetchs
+			uint64_t pf_address = ((cl_addr + pref_offset) << LOG2_BLOCK_SIZE);
+
+			// if prefetch address is not in same PAGE OR if new entry in CSPT OR
+			// delta_stride is zero, break
+			if (((pf_address >> LOG2_PAGE_SIZE) != (addr >> LOG2_PAGE_SIZE)) ||
+			        (CSPT[cpu][signature].conf <= 0) ||
+			        (CSPT[cpu][signature].delta_stride == 0)) {
+				break;
+			}
+
+			prefetch_line(ip, addr, pf_address, FILL_L1, 0);
+
+			signature = update_sig_l1(signature, CSPT[cpu][signature].delta_stride);
+		}
+	}
+
+	// Update last page and cache line offset for this IP
+	entry->last_page = page_num;
+	entry->last_cl_offset = cl_offset;
+
+	return;
+}
+
+// ------------------------- DO NOT CHANGE -------------------------------- //
+void CACHE::l1d_prefetcher_notify_about_dtlb_eviction(
+    uint64_t addr, uint32_t set, uint32_t way, uint8_t prefetch,
+    uint64_t evicted_addr, uint32_t metadata_in) {}
+
+void CACHE::l1d_prefetcher_cache_fill(uint64_t v_addr, uint64_t addr,
+                                      uint32_t set, uint32_t way,
+                                      uint8_t prefetch, uint64_t v_evicted_addr,
+                                      uint64_t evicted_addr,
+                                      uint32_t metadata_in) {}
+
+void CACHE::l1d_prefetcher_final_stats() {
+	cout << "CPU " << cpu << " L1D complex stride prefetcher final stats" << endl;
+	cout << "Degree: " << PREFETCH_DEGREE << endl;
+}
+// ------------------------- DO NOT CHANGE -------------------------------- //
