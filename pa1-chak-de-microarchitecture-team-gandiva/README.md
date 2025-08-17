@@ -235,9 +235,13 @@
 ### **All Techniques Together**
 
 **Plot:**
-
+Without compiler optimizations
 ![All Techniques Comparison](./plots/part2/part2_all_techniques.png)
-
+**Plot:**
+With -O3 flag + loop unrolling + H/W Prefetchers turned on
+![All Techniques Comparison](./plots/part2/part2_all_techniques_new.png)
+With AVX512
+![All Techniques Comparison](./plots/part2/part2_all_techniques_new_512.png)
 **Description:**
 
 - In this we observe simd techniques gives the best speedup. Other techniques doesnt work due to the reasons discussed above.

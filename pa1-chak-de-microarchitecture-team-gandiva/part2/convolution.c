@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>                     // For memset
 #include <immintrin.h>                     // For SIMD intrinsics
 const int LINE_SIZE = 64;                  // 64 Byte L1-D cache line
 const int LLC_size = 30 * 1024 * 1024 * 10; // 3 MB LLC cache
@@ -310,37 +311,52 @@ void tiled_convolution(double *input_image, double *output_image, double *kernel
 // SIMD convolution implementation
 void simd_convolution(double *input_image, double *output_image, double *kernel, int dim, int output_dim, int kernel_size)
 {
-    double temp[4];
+    double temp1[4];
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
-
+    __m256d sum[4];
     for (int i = 0; i < output_dim; i++)
     {
         for (int j = 0; j < output_dim; j++)
         {
-            __m256d sum = _mm256_setzero_pd();
+
+            sum[0] = _mm256_setzero_pd();
+            sum[1] = _mm256_setzero_pd();
+            sum[2] = _mm256_setzero_pd();
+            sum[3] = _mm256_setzero_pd();
+
             double scalar_sum = 0;
 
             for (int ki = 0; ki < kernel_size; ki++)
             {
                 int x = i + ki;
 
-                for (int kj = 0; kj < simd_width; kj += 4)
+                for (int kj = 0; kj < simd_width; kj += 16)
                 { // Process 4 elements at a time
                     int y = j + kj;
+                    __m256d input_vec[4];
+                    __m256d kernel_vec[4];
 
                     // Load 4 pixels from the input image
-                    __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
+                    input_vec[0] = _mm256_loadu_pd(&input_image[x * dim + y]);
+                    input_vec[1] = _mm256_loadu_pd(&input_image[x * dim + y + 4]);
+                    input_vec[2] = _mm256_loadu_pd(&input_image[x * dim + y + 8]);
+                    input_vec[3] = _mm256_loadu_pd(&input_image[x * dim + y + 12]);
 
-                    // Load 4 kernel values
-                    __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                    kernel_vec[0] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                    kernel_vec[1] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
+                    kernel_vec[2] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+8]);
+                    kernel_vec[3] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+12]);
 
                     // Multiply and accumulate
-                    __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
-
+                    sum[0] = _mm256_fmadd_pd(input_vec[0], kernel_vec[0], sum[0]);
+                    sum[1] = _mm256_fmadd_pd(input_vec[1], kernel_vec[1], sum[1]);
+                    sum[2] = _mm256_fmadd_pd(input_vec[2], kernel_vec[2], sum[2]);
+                    sum[3] = _mm256_fmadd_pd(input_vec[3], kernel_vec[3], sum[3]);
+                    
                     // Horizontal sum to get the scalar result
                     // sum += _mm256_reduce_add_pd(result_vec);
-                    sum = _mm256_add_pd(result_vec, sum);
+                    // sum = _mm256_add_pd(result_vec, sum);
                 }
                 for (int kj = simd_width; kj < kernel_size; kj++)
                 {
@@ -348,8 +364,13 @@ void simd_convolution(double *input_image, double *output_image, double *kernel,
                     scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
                 }
             }
-            _mm256_storeu_pd(temp, sum);
-            output_image[i * output_dim + j] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
+            sum[0] = _mm256_add_pd(sum[0], sum[1]);
+            sum[2] = _mm256_add_pd(sum[2], sum[3]);
+            sum[0] = _mm256_add_pd(sum[0], sum[2]);
+            _mm256_storeu_pd(temp1, sum[0]);
+            output_image[i * output_dim + j] = temp1[0] + temp1[1] + temp1[2] + temp1[3] + scalar_sum;
+            // _mm256_storeu_pd(temp2, sum2);
+            // output_image[i * output_dim + j+1] = temp2[0] + temp2[1] + temp2[2] + temp2[3] + scalar_sum;
         }
     }
 }
@@ -368,7 +389,7 @@ void prefetch_convolution(double *input_image, double *output_image, double *ker
         for (int j = 0; j < output_dim; j++) // Finalises the jth item value in ith row after each iteration
         {
             double sum = 0.0;
-            _mm_prefetch((char *)&input_image[(i + 8) * dim + j], _MM_HINT_T0);
+            _mm_prefetch((char *)&input_image[(i + 2) * dim + j], _MM_HINT_T0);
 
             for (int ki = 0; ki < kernel_size; ki++) // Kernel rows
             {
@@ -393,7 +414,7 @@ void tiled_simd_convolution(double *input_image, double *output_image, double *k
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
-
+    __m256d sum[4];
     // Align the input and output images to cache line size
     input_image = (double *)__builtin_assume_aligned(input_image, 64);
     output_image = (double *)__builtin_assume_aligned(output_image, 64);
@@ -408,26 +429,44 @@ void tiled_simd_convolution(double *input_image, double *output_image, double *k
             {
                 for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
-                    __m256d sum = _mm256_setzero_pd();
+                    
+                    sum[0] = _mm256_setzero_pd();
+                    sum[1] = _mm256_setzero_pd();
+                    sum[2] = _mm256_setzero_pd();
+                    sum[3] = _mm256_setzero_pd();
                     double scalar_sum = 0;
                     // Perform SIMD convolution within the tile
                     for (int ki = 0; ki < kernel_size; ki++)
                     {
                         int x = ii + ki;
 
-                        for (int kj = 0; kj < simd_width; kj += 4)
+                        for (int kj = 0; kj < simd_width; kj += 16)
                         { // Process 4 elements at a time
                             int y = jj + kj;
+                            __m256d input_vec[4];
+                            __m256d kernel_vec[4];
+                                                // Load 4 pixels from the input image
+                            input_vec[0] = _mm256_loadu_pd(&input_image[x * dim + y]);
+                            input_vec[1] = _mm256_loadu_pd(&input_image[x * dim + y + 4]);
+                            input_vec[2] = _mm256_loadu_pd(&input_image[x * dim + y + 8]);
+                            input_vec[3] = _mm256_loadu_pd(&input_image[x * dim + y + 12]);
 
-                            // Load 4 pixels from the input image
-                            __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
-
-                            // Load 4 kernel values
-                            __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                            kernel_vec[0] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                            kernel_vec[1] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
+                            kernel_vec[2] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+8]);
+                            kernel_vec[3] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+12]);
 
                             // Multiply and accumulate
-                            __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
-                            sum = _mm256_add_pd(result_vec, sum);
+                            sum[0] = _mm256_fmadd_pd(input_vec[0], kernel_vec[0], sum[0]);
+                            sum[1] = _mm256_fmadd_pd(input_vec[1], kernel_vec[1], sum[1]);
+                            sum[2] = _mm256_fmadd_pd(input_vec[2], kernel_vec[2], sum[2]);
+                            sum[3] = _mm256_fmadd_pd(input_vec[3], kernel_vec[3], sum[3]);
+                    
+
+
+                            // Horizontal sum to get the scalar result
+                            // sum += _mm256_reduce_add_pd(result_vec);
+                            // sum = _mm256_add_pd(result_vec, sum);
                         }
 
                         // Handle the remainder part that cannot be processed by SIMD
@@ -437,8 +476,10 @@ void tiled_simd_convolution(double *input_image, double *output_image, double *k
                             scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
                         }
                     }
-
-                    _mm256_storeu_pd(temp, sum);
+                    sum[0] = _mm256_add_pd(sum[0], sum[1]);
+                    sum[2] = _mm256_add_pd(sum[2], sum[3]);
+                    sum[0] = _mm256_add_pd(sum[0], sum[2]);
+                    _mm256_storeu_pd(temp, sum[0]);
                     output_image[ii * output_dim + jj] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
                 }
             }
@@ -452,12 +493,15 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
     double temp[4];
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
-
+    __m256d sum[4];
     for (int i = 0; i < output_dim; i++)
     {
         for (int j = 0; j < output_dim; j++)
         {
-            __m256d sum = _mm256_setzero_pd();
+            sum[0] = _mm256_setzero_pd();
+            sum[1] = _mm256_setzero_pd();
+            sum[2] = _mm256_setzero_pd();
+            sum[3] = _mm256_setzero_pd();
             double scalar_sum = 0;
 
             for (int ki = 0; ki < kernel_size; ki++)
@@ -466,22 +510,29 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
                 _mm_prefetch((char *)&input_image[(i+8)*dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
                 _mm_prefetch((char *)&input_image[(i + 9) * dim + j + ((j / 8) + 1) * 8], _MM_HINT_T0);
 
-                for (int kj = 0; kj < simd_width; kj += 4)
+                for (int kj = 0; kj < simd_width; kj += 16)
                 { // Process 4 elements at a time
                     int y = j + kj;
+                    __m256d input_vec[4];
+                    __m256d kernel_vec[4];
 
                     // Load 4 pixels from the input image
-                    __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
+                    input_vec[0] = _mm256_loadu_pd(&input_image[x * dim + y]);
+                    input_vec[1] = _mm256_loadu_pd(&input_image[x * dim + y + 4]);
+                    input_vec[2] = _mm256_loadu_pd(&input_image[x * dim + y + 8]);
+                    input_vec[3] = _mm256_loadu_pd(&input_image[x * dim + y + 12]);
 
-                    // Load 4 kernel values
-                    __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                    kernel_vec[0] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                    kernel_vec[1] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
+                    kernel_vec[2] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+8]);
+                    kernel_vec[3] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+12]);
 
                     // Multiply and accumulate
-                    __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
-
-                    // Horizontal sum to get the scalar result
-                    // sum += _mm256_reduce_add_pd(result_vec);
-                    sum = _mm256_add_pd(result_vec, sum);
+                    sum[0] = _mm256_fmadd_pd(input_vec[0], kernel_vec[0], sum[0]);
+                    sum[1] = _mm256_fmadd_pd(input_vec[1], kernel_vec[1], sum[1]);
+                    sum[2] = _mm256_fmadd_pd(input_vec[2], kernel_vec[2], sum[2]);
+                    sum[3] = _mm256_fmadd_pd(input_vec[3], kernel_vec[3], sum[3]);
+                    
                 }
                 for (int kj = simd_width; kj < kernel_size; kj++)
                 {
@@ -489,7 +540,10 @@ void simd_prefetch_convolution(double *input_image, double *output_image, double
                     scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
                 }
             }
-            _mm256_storeu_pd(temp, sum);
+            sum[0] = _mm256_add_pd(sum[0], sum[1]);
+            sum[2] = _mm256_add_pd(sum[2], sum[3]);
+            sum[0] = _mm256_add_pd(sum[0], sum[2]);
+            _mm256_storeu_pd(temp, sum[0]);
             output_image[i * output_dim + j] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
         }
     }
@@ -541,11 +595,10 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
     int remainder = kernel_size % 4;
     int simd_width = kernel_size - remainder;
     double temp[4];
-
+    __m256d sum[4];
     // Align the input and output images to cache line size
     input_image = (double *)__builtin_assume_aligned(input_image, 64);
     output_image = (double *)__builtin_assume_aligned(output_image, 64);
-
     // Iterate over the output image in tiles
      // Iterate over the output image in tiles
     for (int i = 0; i < output_dim; i += output_tile_size)
@@ -557,7 +610,10 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
             {
                 for (int jj = j; jj < j + output_tile_size && jj < output_dim; jj++)
                 {
-                    __m256d sum = _mm256_setzero_pd();
+                    sum[0] = _mm256_setzero_pd();
+                    sum[1] = _mm256_setzero_pd();
+                    sum[2] = _mm256_setzero_pd();
+                    sum[3] = _mm256_setzero_pd();
                     double scalar_sum = 0;
                     _mm_prefetch((const char *)&input_image[(ii + 8) * dim + jj], _MM_HINT_T1);
                     _mm_prefetch((const char *)&input_image[(ii + 9) * dim + jj], _MM_HINT_T1);
@@ -568,23 +624,30 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
                     {
                         int x = ii + ki;
 
-                        for (int kj = 0; kj < simd_width; kj += 8)
+                        for (int kj = 0; kj < simd_width; kj += 16)
                         { // Process 4 elements at a time
                             int y = jj + kj;
 
-                            // Load 4 pixels from the input image
-                            __m256d input_vec = _mm256_loadu_pd(&input_image[x * dim + y]);
-                            __m256d input_vec_2 = _mm256_loadu_pd(&input_image[x * dim + y+4]);
+                            __m256d input_vec[4];
+                            __m256d kernel_vec[4];
 
-                            // Load 4 kernel values
-                            __m256d kernel_vec = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
-                            __m256d kernel_vec_2 = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
+                            // Load 4 pixels from the input image
+                            input_vec[0] = _mm256_loadu_pd(&input_image[x * dim + y]);
+                            input_vec[1] = _mm256_loadu_pd(&input_image[x * dim + y + 4]);
+                            input_vec[2] = _mm256_loadu_pd(&input_image[x * dim + y + 8]);
+                            input_vec[3] = _mm256_loadu_pd(&input_image[x * dim + y + 12]);
+
+                            kernel_vec[0] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj]);
+                            kernel_vec[1] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+4]);
+                            kernel_vec[2] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+8]);
+                            kernel_vec[3] = _mm256_loadu_pd(&kernel[ki * kernel_size + kj+12]);
 
                             // Multiply and accumulate
-                            __m256d result_vec = _mm256_mul_pd(input_vec, kernel_vec);
-                            __m256d result_vec_2 = _mm256_mul_pd(input_vec_2, kernel_vec_2);
-                            sum = _mm256_add_pd(result_vec, sum);
-                            sum = _mm256_add_pd(result_vec_2, sum);
+                            sum[0] = _mm256_fmadd_pd(input_vec[0], kernel_vec[0], sum[0]);
+                            sum[1] = _mm256_fmadd_pd(input_vec[1], kernel_vec[1], sum[1]);
+                            sum[2] = _mm256_fmadd_pd(input_vec[2], kernel_vec[2], sum[2]);
+                            sum[3] = _mm256_fmadd_pd(input_vec[3], kernel_vec[3], sum[3]);
+
                         }
 
                         // Handle the remainder part that cannot be processed by SIMD
@@ -594,8 +657,10 @@ void simd_tiled_prefetch_convolution(double *input_image, double *output_image, 
                             scalar_sum += input_image[x * dim + y] * kernel[ki * kernel_size + kj];
                         }
                     }
-
-                    _mm256_storeu_pd(temp, sum);
+                    sum[0] = _mm256_add_pd(sum[0], sum[1]);
+                    sum[2] = _mm256_add_pd(sum[2], sum[3]);
+                    sum[0] = _mm256_add_pd(sum[0], sum[2]);
+                    _mm256_storeu_pd(temp, sum[0]);
                     output_image[ii * output_dim + jj] = temp[0] + temp[1] + temp[2] + temp[3] + scalar_sum;
                 }
             }
@@ -608,6 +673,7 @@ void flushCache()
     // Create a buffer large enough to fill the LLC
     size_t buffer_size = LLC_size;
     char *buffer = (char *)malloc(buffer_size);
+    memset(buffer, 0, buffer_size); // Initialize the buffer to zero
     if (!buffer)
     {
         perror("malloc failed");

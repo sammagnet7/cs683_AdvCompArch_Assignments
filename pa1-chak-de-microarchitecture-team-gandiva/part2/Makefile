@@ -1,6 +1,6 @@
 BUILD=build
 CC=g++
-FLAGS=-mavx
+FLAGS=-march=native -O3
 
 naive: build
 	$(CC) $(FLAGS) convolution.c -o $(BUILD)/$@

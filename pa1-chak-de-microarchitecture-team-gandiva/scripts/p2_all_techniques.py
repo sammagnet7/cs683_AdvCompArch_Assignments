@@ -9,7 +9,7 @@ AVG_ITERATIONS = 1
 BUILD_DIR = '../part2/build'
 MATRIX_SIZE = [1000, 3000, 5000]
 TILE_SIZE = 32   # Optimal value 32, found after testing
-KERNEL_SIZE = 16 # Optimal value 16, found after testing
+KERNEL_SIZE = 32 # Optimal value 32, found after testing
 
 techniques = [
     "tiling",
@@ -48,7 +48,7 @@ def plot_results(matrix_size, speedups_over_matrix, techniques, kernel_size):
 
     bar_positions = [np.arange(len(matrix_size)) + i * bar_width for i in range(n_bars)]
 
-    plt.figure(figsize=(14, 6))
+    plt.figure(figsize=(14, 7))
 
     # Plotting the bars
     for i in range(n_bars):
@@ -70,7 +70,7 @@ def plot_results(matrix_size, speedups_over_matrix, techniques, kernel_size):
     plt.ylim(0, max(max(speedups_over_matrix)) * 1.3)
 
     # Adding legends outside the plot
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, shadow=True, ncol=4, fontsize=FONT_SIZE)
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), fancybox=True, ncol=4, fontsize=FONT_SIZE)
 
     # Adding values on top of bars
     for i in range(n_bars):
@@ -78,11 +78,10 @@ def plot_results(matrix_size, speedups_over_matrix, techniques, kernel_size):
             plt.text(bar_positions[i][j], speedups_over_matrix[j][i] + max(max(speedups_over_matrix)) * 0.03, 
                      str(speedups_over_matrix[j][i]), ha='center', va='bottom', rotation='vertical', fontsize=FONT_SIZE)
 
-    plt.tight_layout()
     plt.subplots_adjust(bottom=0.2) 
 
     # Display the plot
-    plt.savefig("part2_all_techniques.png")
+    plt.savefig("part2_all_techniques_new.png")
 
 # Main script to collect speedup data and plot it
 if __name__ == "__main__":
